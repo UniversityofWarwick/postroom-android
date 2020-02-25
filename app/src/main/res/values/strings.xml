@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Post room</string>
+    <string name="process_incoming_parcels">Process incoming items</string>
+    <string name="manual_item_collection">Manual item collection</string>
+    <string name="what_do_you_want_to_do">What do you want to do?</string>
+    <string name="nfc_instruction_text">Tap a university card against the device to process collections. You don\'t need to have this app open.</string>
+</resources>
