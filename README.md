@@ -6,3 +6,12 @@ This is Post room (companion app) for Android. The app is, per request, a thin w
 It is used by estates staff to process received parcels and aid in picking up items for students calling in at the post room.
 
 The app is written in Kotlin.
+
+Configuring the instance
+------------------------
+
+For local development, use the app's preferences activity (accessed via the action bar's settings item - indicated with a cog) and set the instance URL to:
+
+```
+https://$hostname.warwick.ac.uk/
+```
