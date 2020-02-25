@@ -4,4 +4,16 @@
     <string name="manual_item_collection">Manual item collection</string>
     <string name="what_do_you_want_to_do">What do you want to do?</string>
     <string name="nfc_instruction_text">Tap a university card against the device to process collections. You don\'t need to have this app open.</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <!-- Preference Titles -->
+    <string name="server_header">Server settings</string>
+
+    <!-- Preferences -->
+    <string name="instance_url">Instance URL</string>
+
+    <string name="settings">Settings</string>
+    <string name="boxes_in_a_pile">Boxes in a pile</string>
+    <string name="nfc_logo">NFC Logo</string>
+    <string name="instance_url_pref_id">instance_url</string>
 </resources>

@@ -1,0 +1,11 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="@string/server_header">
+
+        <EditTextPreference
+            app:key="@string/instance_url_pref_id"
+            app:title="@string/instance_url"
+            app:defaultValue="https://postroom.warwick.ac.uk"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+</PreferenceScreen>

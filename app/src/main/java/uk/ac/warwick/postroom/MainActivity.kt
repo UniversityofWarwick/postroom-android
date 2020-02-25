@@ -2,6 +2,7 @@ package uk.ac.warwick.postroom
 
 import android.app.PendingIntent
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
@@ -11,14 +12,19 @@ import android.nfc.tech.MifareClassic
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Button
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.*
+import androidx.preference.PreferenceManager.getDefaultSharedPreferences
+import uk.ac.warwick.postroom.ui.main.SettingsActivity
 import java.io.IOException
 
-const val POSTROOM_BASE_URL = "https://postroom-dev.warwick.ac.uk/"
+
+const val POSTROOM_BASE_URL_DEFAULT = "https://postroom.warwick.ac.uk/"
 const val PROCESS_INCOMING_ROUTE = "process-incoming/"
 const val COLLECTION_ROUTE = "process-collection/"
 
@@ -40,14 +46,17 @@ class MainActivity : AppCompatActivity() {
         mAdapter = NfcAdapter.getDefaultAdapter(this)
         pendingIntent = PendingIntent.getActivity(
             applicationContext, 0,
-            Intent(applicationContext, applicationContext.javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0
+            Intent(
+                applicationContext,
+                applicationContext.javaClass
+            ).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0
         )
 
         findViewById<Button>(R.id.process_incoming_parcels).setOnClickListener {
             val intent = buildCustomTabsIntent()
 
             try {
-                val uri = Uri.parse(POSTROOM_BASE_URL+PROCESS_INCOMING_ROUTE)
+                val uri = Uri.parse(getBaseUrl() + PROCESS_INCOMING_ROUTE)
                 intent.launchUrl(
                     this,
                     uri
@@ -61,7 +70,7 @@ class MainActivity : AppCompatActivity() {
             val intent = buildCustomTabsIntent()
 
             try {
-                val uri = Uri.parse(POSTROOM_BASE_URL+ COLLECTION_ROUTE)
+                val uri = Uri.parse(getBaseUrl() + COLLECTION_ROUTE)
                 intent.launchUrl(
                     this,
                     uri
@@ -72,10 +81,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        val inflater = menuInflater
+        inflater.inflate(R.menu.toolbar, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.settingsBtn -> {
+                startActivity(Intent(this, SettingsActivity::class.java))
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
     private fun buildCustomTabsIntent(): CustomTabsIntent {
         return CustomTabsIntent.Builder(customTabsSession)
             .setToolbarColor(
-                this.titleColor
+                getColor(R.color.colorPrimaryDark)
             )
             .setStartAnimations(this, R.anim.slide_in_right, R.anim.slide_out_left)
             .setExitAnimations(
@@ -188,7 +213,7 @@ class MainActivity : AppCompatActivity() {
     private fun openCollectionCustomTab(customTabIntent: CustomTabsIntent) {
         try {
             Log.i(TAG, "Opening intent from onResume")
-            val uri = Uri.parse(POSTROOM_BASE_URL + COLLECTION_ROUTE + universityId)
+            val uri = Uri.parse(getBaseUrl() + COLLECTION_ROUTE + universityId)
             universityId = null
             customTabIntent.launchUrl(
                 this@MainActivity,
@@ -202,7 +227,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        mAdapter?.disableForegroundDispatch(this);
+        mAdapter?.disableForegroundDispatch(this)
     }
 
     override fun onDestroy() {
@@ -230,16 +255,13 @@ class MainActivity : AppCompatActivity() {
             val detectedTag: Tag? = intent.getParcelableExtra<Tag>(NfcAdapter.EXTRA_TAG)
             if (detectedTag != null) {
                 val mfc = MifareClassic.get(detectedTag)
-                var data: ByteArray = ByteArray(0)
+                var data = ByteArray(0)
 
                 try {
                     mfc.connect()
-                    var auth = false
-                    val cardData: String? = null
-                    mfc.sectorCount
-                    var bCount = 0
-                    var bIndex = 0
-                    auth = mfc.authenticateSectorWithKeyA(
+                    val bCount: Int
+                    var bIndex: Int
+                    val auth: Boolean = mfc.authenticateSectorWithKeyA(
                         1,
                         MifareClassic.KEY_MIFARE_APPLICATION_DIRECTORY
                     )
@@ -261,6 +283,13 @@ class MainActivity : AppCompatActivity() {
 
         }
     }
+
+    private fun getBaseUrl(): String =
+        getDefaultSharedPreferences(this).getString(
+            getString(R.string.instance_url_pref_id),
+            POSTROOM_BASE_URL_DEFAULT
+        )!!
+
 
     private fun readMifareData(data: ByteArray) {
         val uniId =
