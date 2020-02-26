@@ -288,7 +288,7 @@ class MainActivity : AppCompatActivity() {
         getDefaultSharedPreferences(this).getString(
             getString(R.string.instance_url_pref_id),
             POSTROOM_BASE_URL_DEFAULT
-        )!!
+        )!!.replace("^(.*[^/])$".toRegex()) { it.groupValues[0].toString()+"/" }
 
 
     private fun readMifareData(data: ByteArray) {
