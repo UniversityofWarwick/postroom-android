@@ -16,4 +16,5 @@
     <string name="boxes_in_a_pile">Boxes in a pile</string>
     <string name="nfc_logo">NFC Logo</string>
     <string name="instance_url_pref_id">instance_url</string>
+    <string name="switch_user">Switch user</string>
 </resources>

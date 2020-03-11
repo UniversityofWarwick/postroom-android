@@ -27,6 +27,7 @@ import java.io.IOException
 const val POSTROOM_BASE_URL_DEFAULT = "https://postroom.warwick.ac.uk/"
 const val PROCESS_INCOMING_ROUTE = "process-incoming/"
 const val COLLECTION_ROUTE = "process-collection/"
+const val SSO_PROD_AUTHORITY = "websignon.warwick.ac.uk"
 
 private const val TAG = "Postroom"
 
@@ -74,6 +75,20 @@ class MainActivity : AppCompatActivity() {
                 intent.launchUrl(
                     this,
                     uri
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to open custom tab", e)
+            }
+        }
+
+        findViewById<Button>(R.id.switch_user).setOnClickListener {
+            val intent = buildCustomTabsIntent()
+            val builder = Uri.Builder()
+            builder.scheme("https").authority(SSO_PROD_AUTHORITY).appendPath("origin").appendPath("logout").appendQueryParameter("target", getBaseUrl() + PROCESS_INCOMING_ROUTE)
+            try {
+                intent.launchUrl(
+                    this,
+                    builder.build()
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to open custom tab", e)
