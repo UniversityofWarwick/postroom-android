@@ -9,8 +9,8 @@ android {
         applicationId "uk.ac.warwick.postroom"
         minSdkVersion 27
         targetSdkVersion 29
-        versionCode 1
-        versionName "1.0"
+        versionCode 3
+        versionName "1.0.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
