@@ -1,10 +1,12 @@
 package uk.ac.warwick.postroom
 
+import android.app.AlertDialog
 import android.app.PendingIntent
 import android.content.ComponentName
-import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.nfc.NfcAdapter
 import android.nfc.Tag
@@ -27,6 +29,8 @@ import java.io.IOException
 const val POSTROOM_BASE_URL_DEFAULT = "https://postroom.warwick.ac.uk/"
 const val PROCESS_INCOMING_ROUTE = "process-incoming/"
 const val COLLECTION_ROUTE = "process-collection/"
+const val RTS_SPR_ROUTE = "rts/"
+const val RTS_COURIER_ROUTE = "rts/couriers/"
 const val SSO_PROD_AUTHORITY = "websignon.warwick.ac.uk"
 
 private const val TAG = "Postroom"
@@ -43,6 +47,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.main_activity)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
 
         mAdapter = NfcAdapter.getDefaultAdapter(this)
         pendingIntent = PendingIntent.getActivity(
@@ -54,45 +59,58 @@ class MainActivity : AppCompatActivity() {
         )
 
         findViewById<Button>(R.id.process_incoming_parcels).setOnClickListener {
-            val intent = buildCustomTabsIntent()
-
-            try {
-                val uri = Uri.parse(getBaseUrl() + PROCESS_INCOMING_ROUTE)
-                intent.launchUrl(
-                    this,
-                    uri
-                )
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to open custom tab", e)
-            }
+            goToUrl(getBaseUrl() + PROCESS_INCOMING_ROUTE)
         }
 
         findViewById<Button>(R.id.manual_item_collection).setOnClickListener {
-            val intent = buildCustomTabsIntent()
-
-            try {
-                val uri = Uri.parse(getBaseUrl() + COLLECTION_ROUTE)
-                intent.launchUrl(
-                    this,
-                    uri
-                )
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to open custom tab", e)
-            }
+            goToUrl(getBaseUrl() + COLLECTION_ROUTE)
         }
 
-        findViewById<Button>(R.id.switch_user).setOnClickListener {
-            val intent = buildCustomTabsIntent()
-            val builder = Uri.Builder()
-            builder.scheme("https").authority(SSO_PROD_AUTHORITY).appendPath("origin").appendPath("logout").appendQueryParameter("target", getBaseUrl() + PROCESS_INCOMING_ROUTE)
-            try {
-                intent.launchUrl(
-                    this,
-                    builder.build()
-                )
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to open custom tab", e)
+        findViewById<Button>(R.id.rts).setOnClickListener {
+            val builder: AlertDialog.Builder = AlertDialog.Builder(this)
+            builder.setTitle("Which statement best describes what you want to do?")
+            builder.setItems(arrayOf<CharSequence>(
+                getString(R.string.i_work_in_the_spr_rts),
+                getString(R.string.i_am_a_courier_rts)
+            )
+            ) { _, which ->
+                when (which) {
+                    0 -> goToUrl(getBaseUrl() + RTS_SPR_ROUTE)
+                    1 -> goToUrl(getBaseUrl() + RTS_COURIER_ROUTE)
+                }
             }
+            builder.setNegativeButton("Cancel") { _: DialogInterface, _: Int -> }
+            builder.create().show()
+        }
+    }
+
+    private fun goToUrl(uriString: String) {
+        val intent = buildCustomTabsIntent()
+
+        try {
+            val uri = Uri.parse(uriString)
+            intent.launchUrl(
+                this,
+                uri
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to open custom tab", e)
+        }
+    }
+
+    private fun switchUser() {
+        val intent = buildCustomTabsIntent()
+        val builder = Uri.Builder()
+        builder.scheme("https").authority(SSO_PROD_AUTHORITY).appendPath("origin")
+            .appendPath("logout")
+            .appendQueryParameter("target", getBaseUrl() + PROCESS_INCOMING_ROUTE)
+        try {
+            intent.launchUrl(
+                this,
+                builder.build()
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to open custom tab", e)
         }
     }
 
@@ -106,6 +124,10 @@ class MainActivity : AppCompatActivity() {
         return when (item.itemId) {
             R.id.settingsBtn -> {
                 startActivity(Intent(this, SettingsActivity::class.java))
+                true
+            }
+            R.id.switchUserBtn -> {
+                switchUser()
                 true
             }
             else -> super.onOptionsItemSelected(item)
