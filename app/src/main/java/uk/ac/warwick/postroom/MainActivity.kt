@@ -309,10 +309,9 @@ class MainActivity : AppCompatActivity() {
                             data = data.plus(mfc.readBlock(bIndex))
                         }
                         readMifareData(data)
-
-
                     } else { // Authentication failed - Handle it
                     }
+                    mfc.close()
                 } catch (e: IOException) {
                     Log.e(TAG, "IOException")
                 }
