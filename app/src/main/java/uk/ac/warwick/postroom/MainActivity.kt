@@ -7,6 +7,7 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
+import android.graphics.Camera
 import android.net.Uri
 import android.nfc.NfcAdapter
 import android.nfc.Tag
@@ -124,6 +125,10 @@ class MainActivity : AppCompatActivity() {
         return when (item.itemId) {
             R.id.settingsBtn -> {
                 startActivity(Intent(this, SettingsActivity::class.java))
+                true
+            }
+            R.id.cameraBtn -> {
+                startActivity(Intent(this, CameraActivity::class.java))
                 true
             }
             R.id.switchUserBtn -> {

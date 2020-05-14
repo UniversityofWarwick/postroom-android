@@ -11,4 +11,9 @@
         android:icon="@drawable/ic_settings_24px"
         android:title="@string/settings"
         app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/cameraBtn"
+        android:icon="@drawable/ic_baseline_camera_alt_24"
+        android:title="@string/camera"
+        app:showAsAction="ifRoom" />
 </menu>

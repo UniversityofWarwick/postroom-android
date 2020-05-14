@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Post room</string>
+    <string name="capture_button_alt">Capture</string>
+
     <string name="process_incoming_parcels">Process incoming items</string>
     <string name="manual_item_collection">Manual item collection</string>
     <string name="what_do_you_want_to_do">What do you want to do?</string>
@@ -20,4 +22,5 @@
     <string name="return_to_sender">Return to sender</string>
     <string name="i_am_a_courier_rts">I\'m a courier and am collecting items that have already been set-aside.</string>
     <string name="i_work_in_the_spr_rts">I work in the post room and need to move uncollected items onto an RTS shelf.</string>
+    <string name="camera">Camera</string>
 </resources>
