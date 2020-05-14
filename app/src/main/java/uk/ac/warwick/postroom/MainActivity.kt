@@ -29,6 +29,7 @@ import java.io.IOException
 const val POSTROOM_BASE_URL_DEFAULT = "https://postroom.warwick.ac.uk/"
 const val PROCESS_INCOMING_ROUTE = "process-incoming/"
 const val COLLECTION_ROUTE = "process-collection/"
+const val AUDITS_ROUTE = "admin/audits/"
 const val RTS_SPR_ROUTE = "rts/"
 const val RTS_COURIER_ROUTE = "rts/couriers/"
 const val SSO_PROD_AUTHORITY = "websignon.warwick.ac.uk"
@@ -64,6 +65,10 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.manual_item_collection).setOnClickListener {
             goToUrl(getBaseUrl() + COLLECTION_ROUTE)
+        }
+
+        findViewById<Button>(R.id.view_activity).setOnClickListener {
+            goToUrl(getBaseUrl() + AUDITS_ROUTE)
         }
 
         findViewById<Button>(R.id.rts).setOnClickListener {
