@@ -21,4 +21,5 @@
     <string name="i_am_a_courier_rts">I\'m a courier and am collecting items that have already been set-aside.</string>
     <string name="i_work_in_the_spr_rts">I work in the post room and need to move uncollected items onto an RTS shelf.</string>
     <string name="view_activity">View Activity</string>
+    <string name="shelf_audit">Shelf Audit</string>
 </resources>
