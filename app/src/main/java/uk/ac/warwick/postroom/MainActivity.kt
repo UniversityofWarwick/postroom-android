@@ -32,6 +32,7 @@ const val COLLECTION_ROUTE = "process-collection/"
 const val AUDITS_ROUTE = "admin/audits/"
 const val RTS_SPR_ROUTE = "rts/"
 const val RTS_COURIER_ROUTE = "rts/couriers/"
+const val SHELF_AUDIT_ROUTE = "admin/shelving-audit/"
 const val SSO_PROD_AUTHORITY = "websignon.warwick.ac.uk"
 
 private const val TAG = "Postroom"
@@ -69,6 +70,10 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.view_activity).setOnClickListener {
             goToUrl(getBaseUrl() + AUDITS_ROUTE)
+        }
+
+        findViewById<Button>(R.id.shelf_audit).setOnClickListener {
+            goToUrl(getBaseUrl() + SHELF_AUDIT_ROUTE)
         }
 
         findViewById<Button>(R.id.rts).setOnClickListener {
