@@ -48,28 +48,41 @@
             app:layout_constraintTop_toBottomOf="@+id/manual_item_collection" />
 
         <Button
-            android:id="@+id/view_activity"
+            android:id="@+id/move_items"
             style="?attr/materialButtonOutlinedStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="@string/view_activity"
+            android:background="#FFFFFF"
+            android:text="@string/move_items"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintHorizontal_bias="0.497"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/rts" />
+
+        <Button
+            android:id="@+id/view_activity"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="@string/view_activity"
+            app:layout_constraintEnd_toStartOf="@+id/shelf_audit"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/move_items" />
 
         <Button
             android:id="@+id/shelf_audit"
             style="?attr/materialButtonOutlinedStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="28dp"
             android:text="Shelf audit"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/view_activity" />
+            app:layout_constraintStart_toEndOf="@+id/view_activity"
+            app:layout_constraintTop_toBottomOf="@+id/move_items" />
 
         <ImageView
             android:id="@+id/imageView"

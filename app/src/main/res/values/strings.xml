@@ -22,4 +22,5 @@
     <string name="i_work_in_the_spr_rts">I work in the post room and need to move uncollected items onto an RTS shelf.</string>
     <string name="view_activity">View Activity</string>
     <string name="shelf_audit">Shelf Audit</string>
+    <string name="move_items">Move items</string>
 </resources>
