@@ -327,7 +327,7 @@ class CameraFragment : Fragment() {
                                 .build()
 
                             val imageExtracted = FirebaseVisionImage.fromByteArray(data, metadata)
-                            val detector = FirebaseVision.getInstance().onDeviceTextRecognizer
+                            val detector = FirebaseVision.getInstance().cloudTextRecognizer
                             val result = detector.processImage(imageExtracted)
                                 .addOnSuccessListener { firebaseVisionText ->
                                     val resultText = firebaseVisionText.text
