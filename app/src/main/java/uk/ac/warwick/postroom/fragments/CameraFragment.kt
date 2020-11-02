@@ -17,25 +17,22 @@
 package uk.ac.warwick.postroom.fragments
 
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
-import android.graphics.ImageFormat
 import android.hardware.display.DisplayManager
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.util.Log
+import android.util.Size
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import androidx.camera.core.*
-import androidx.camera.core.ImageCapture.Metadata
-import androidx.camera.core.ImageCapture.OnImageCapturedCallback
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -43,9 +40,6 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.Navigation
-import com.google.firebase.ml.vision.FirebaseVision
-import com.google.firebase.ml.vision.common.FirebaseVisionImage
-import com.google.firebase.ml.vision.common.FirebaseVisionImageMetadata
 import uk.ac.warwick.postroom.*
 import uk.ac.warwick.postroom.R
 import uk.ac.warwick.postroom.utils.simulateClick
@@ -76,6 +70,7 @@ class CameraFragment : Fragment() {
     private var imageCapture: ImageCapture? = null
     private var imageAnalyzer: ImageAnalysis? = null
     private var camera: Camera? = null
+    private val executor = Executors.newSingleThreadExecutor()
 
     private val displayManager by lazy {
         requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
@@ -91,7 +86,7 @@ class CameraFragment : Fragment() {
                 // When the volume down button is pressed, simulate a shutter button click
                 KeyEvent.KEYCODE_VOLUME_DOWN -> {
                     val shutter = container
-                            .findViewById<ImageButton>(R.id.camera_capture_button)
+                        .findViewById<ImageButton>(R.id.camera_capture_button)
                     shutter.simulateClick()
                 }
             }
@@ -121,7 +116,7 @@ class CameraFragment : Fragment() {
         // user could have removed them while the app was in paused state.
         if (!PermissionsFragment.hasPermissions(requireContext())) {
             Navigation.findNavController(requireActivity(), R.id.fragment_container).navigate(
-                    CameraFragmentDirections.actionCameraToPermissions()
+                CameraFragmentDirections.actionCameraToPermissions()
             )
         }
     }
@@ -138,10 +133,11 @@ class CameraFragment : Fragment() {
     }
 
     override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?): View? =
-            inflater.inflate(R.layout.fragment_camera, container, false)
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? =
+        inflater.inflate(R.layout.fragment_camera, container, false)
 
 
     @SuppressLint("MissingPermission")
@@ -205,7 +201,8 @@ class CameraFragment : Fragment() {
         val rotation = viewFinder.display.rotation
 
         // Bind the CameraProvider to the LifeCycleOwner
-        val cameraSelector = CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
+        val cameraSelector =
+            CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
         cameraProviderFuture.addListener(Runnable {
 
@@ -220,13 +217,21 @@ class CameraFragment : Fragment() {
                 .setTargetRotation(rotation)
                 .build()
 
+            val imageAnalysis = ImageAnalysis.Builder()
+                .setTargetResolution(Size(1280, 720))
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build()
+
+
+            imageAnalysis.setAnalyzer(executor, OcrImageAnalyzer(requireContext()))
+
+
             // ImageCapture
             imageCapture = ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                 // We request aspect ratio but no resolution to match preview config, but letting
                 // CameraX optimize for whatever specific resolution best fits our use cases
                 .setTargetAspectRatio(screenAspectRatio)
-                .setBufferFormat(ImageFormat.YUV_420_888)
                 // Set initial target rotation, we will have to call this again if rotation changes
                 // during the lifecycle of this use case
                 .setTargetRotation(rotation)
@@ -240,11 +245,12 @@ class CameraFragment : Fragment() {
                 // A variable number of use-cases can be passed here -
                 // camera provides access to CameraControl & CameraInfo
                 camera = cameraProvider.bindToLifecycle(
-                        this, cameraSelector, preview, imageCapture)
+                    this, cameraSelector, preview, imageCapture, imageAnalysis
+                )
 
                 // Attach the viewfinder's surface provider to preview use case
                 preview?.setSurfaceProvider(viewFinder.createSurfaceProvider(camera?.cameraInfo))
-            } catch(exc: Exception) {
+            } catch (exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
             }
 
@@ -270,14 +276,6 @@ class CameraFragment : Fragment() {
         return AspectRatio.RATIO_16_9
     }
 
-    private fun degreesToFirebaseRotation(degrees: Int): Int = when(degrees) {
-        0 -> FirebaseVisionImageMetadata.ROTATION_0
-        90 -> FirebaseVisionImageMetadata.ROTATION_90
-        180 -> FirebaseVisionImageMetadata.ROTATION_180
-        270 -> FirebaseVisionImageMetadata.ROTATION_270
-        else -> throw Exception("Rotation must be 0, 90, 180, or 270.")
-    }
-
 
     /** Method used to re-draw the camera UI controls, called every time configuration changes. */
     private fun updateCameraUi() {
@@ -298,60 +296,61 @@ class CameraFragment : Fragment() {
 
 
                 // Create output options object which contains file + metadata
-                val firebaseRotation = degreesToFirebaseRotation(imageCapture.targetRotation)
                 // Setup image capture listener which is triggered after photo has been taken
-                imageCapture.takePicture(
-                        cameraExecutor, object : OnImageCapturedCallback() {
-                    override fun onError(exc: ImageCaptureException) {
-                        Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
-                    }
 
-                        @SuppressLint("UnsafeExperimentalUsageError")
-                        override fun onCaptureSuccess(image: ImageProxy) {
-                            val y = image.planes[0]
-                            val u = image.planes[1]
-                            val v = image.planes[2]
-                            val Yb = y.buffer.remaining()
-                            val Ub = u.buffer.remaining()
-                            val Vb = v.buffer.remaining()
-                            val data = ByteArray(Yb + Ub + Vb)
-
-                            y.buffer.get(data, 0, Yb)
-                            u.buffer.get(data, Yb, Ub)
-                            v.buffer.get(data, Yb + Ub, Vb)
-                            val metadata = FirebaseVisionImageMetadata.Builder()
-                                .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_YV12)
-                                .setHeight(image.height)
-                                .setWidth(image.width)
-                                .setRotation(firebaseRotation)
-                                .build()
-
-                            val imageExtracted = FirebaseVisionImage.fromByteArray(data, metadata)
-                            val detector = FirebaseVision.getInstance().cloudTextRecognizer
-                            val result = detector.processImage(imageExtracted)
-                                .addOnSuccessListener { firebaseVisionText ->
-                                    val resultText = firebaseVisionText.text
-                                    for (block in firebaseVisionText.textBlocks) {
-                                        val blockText = block.text
-                                        val blockConfidence = block.confidence
-                                        val blockLanguages = block.recognizedLanguages
-                                        val blockCornerPoints = block.cornerPoints
-                                        val blockFrame = block.boundingBox
-                                        for (line in block.lines) {
-                                            val lineText = line.text
-                                            val builder: AlertDialog.Builder = AlertDialog.Builder(requireContext())
-                                            builder.setTitle(lineText).create().show()
-                                        }
-                                    }
-                                }
-                                .addOnFailureListener { e ->
-                                    Log.e(TAG, "Recognise text failed")
-                                }
-
-                        }
-
-
-                })
+//                imageCapture.takePicture(
+//                    cameraExecutor, object : OnImageCapturedCallback() {
+//                        override fun onError(exc: ImageCaptureException) {
+//                            Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+//                        }
+//
+//                        @SuppressLint("UnsafeExperimentalUsageError")
+//                        override fun onCaptureSuccess(image: ImageProxy) {
+//                            val y = image.planes[0]
+//                            val u = image.planes[1]
+//                            val v = image.planes[2]
+//                            val Yb = y.buffer.remaining()
+//                            val Ub = u.buffer.remaining()
+//                            val Vb = v.buffer.remaining()
+//                            val data = ByteArray(Yb + Ub + Vb)
+//
+//                            y.buffer.get(data, 0, Yb)
+//                            u.buffer.get(data, Yb, Ub)
+//                            v.buffer.get(data, Yb + Ub, Vb)
+//                            val metadata = FirebaseVisionImageMetadata.Builder()
+//                                .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_YV12)
+//                                .setHeight(image.height)
+//                                .setWidth(image.width)
+//                                .setRotation(firebaseRotation)
+//                                .build()
+//
+//                            val imageExtracted = FirebaseVisionImage.fromByteArray(data, metadata)
+//                            val detector = FirebaseVision.getInstance().cloudTextRecognizer
+//                            val result = detector.processImage(imageExtracted)
+//                                .addOnSuccessListener { firebaseVisionText ->
+//                                    val resultText = firebaseVisionText.text
+//                                    for (block in firebaseVisionText.textBlocks) {
+//                                        val blockText = block.text
+//                                        val blockConfidence = block.confidence
+//                                        val blockLanguages = block.recognizedLanguages
+//                                        val blockCornerPoints = block.cornerPoints
+//                                        val blockFrame = block.boundingBox
+//                                        for (line in block.lines) {
+//                                            val lineText = line.text
+//                                            val builder: AlertDialog.Builder =
+//                                                AlertDialog.Builder(requireContext())
+//                                            builder.setTitle(lineText).create().show()
+//                                        }
+//                                    }
+//                                }
+//                                .addOnFailureListener { e ->
+//                                    Log.e(TAG, "Recognise text failed")
+//                                }
+//
+//                        }
+//
+//
+//                    })
             }
         }
 
@@ -368,7 +367,9 @@ class CameraFragment : Fragment() {
 
         /** Helper function used to create a timestamped file */
         private fun createFile(baseFolder: File, format: String, extension: String) =
-                File(baseFolder, SimpleDateFormat(format, Locale.US)
-                        .format(System.currentTimeMillis()) + extension)
+            File(
+                baseFolder, SimpleDateFormat(format, Locale.US)
+                    .format(System.currentTimeMillis()) + extension
+            )
     }
 }

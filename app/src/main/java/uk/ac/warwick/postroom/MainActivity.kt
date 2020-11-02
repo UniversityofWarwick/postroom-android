@@ -34,7 +34,7 @@ const val RTS_SPR_ROUTE = "rts/"
 const val RTS_COURIER_ROUTE = "rts/couriers/"
 const val SSO_PROD_AUTHORITY = "websignon.warwick.ac.uk"
 
-private const val TAG = "Postroom"
+const val TAG = "Postroom"
 
 class MainActivity : AppCompatActivity() {
     var mAdapter: NfcAdapter? = null
