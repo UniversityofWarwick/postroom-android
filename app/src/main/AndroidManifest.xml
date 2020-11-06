@@ -3,6 +3,7 @@
     package="uk.ac.warwick.postroom">
 
     <uses-permission android:name="android.permission.NFC" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.CAMERA" />
 
     <application
@@ -16,7 +17,6 @@
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"
             android:value="ocr" />
-
 
         <activity
             android:name=".ui.main.SettingsActivity"

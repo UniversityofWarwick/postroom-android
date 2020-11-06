@@ -30,8 +30,11 @@ import java.io.IOException
 const val POSTROOM_BASE_URL_DEFAULT = "https://postroom.warwick.ac.uk/"
 const val PROCESS_INCOMING_ROUTE = "process-incoming/"
 const val COLLECTION_ROUTE = "process-collection/"
+const val AUDITS_ROUTE = "admin/audits/"
 const val RTS_SPR_ROUTE = "rts/"
+const val MOVE_ITEMS_ROUTE = "move/"
 const val RTS_COURIER_ROUTE = "rts/couriers/"
+const val SHELF_AUDIT_ROUTE = "admin/shelving-audit/"
 const val SSO_PROD_AUTHORITY = "websignon.warwick.ac.uk"
 
 const val TAG = "Postroom"
@@ -67,22 +70,57 @@ class MainActivity : AppCompatActivity() {
             goToUrl(getBaseUrl() + COLLECTION_ROUTE)
         }
 
+        findViewById<Button>(R.id.view_activity).setOnClickListener {
+            goToUrl(getBaseUrl() + AUDITS_ROUTE)
+        }
+
+        findViewById<Button>(R.id.shelf_audit).setOnClickListener {
+            goToUrl(getBaseUrl() + SHELF_AUDIT_ROUTE)
+        }
+
         findViewById<Button>(R.id.rts).setOnClickListener {
-            val builder: AlertDialog.Builder = AlertDialog.Builder(this)
-            builder.setTitle("Which statement best describes what you want to do?")
-            builder.setItems(arrayOf<CharSequence>(
+            handleRts()
+        }
+
+        findViewById<Button>(R.id.move_items).setOnClickListener {
+            handleMoveItems()
+        }
+    }
+
+    private fun handleRts() {
+        val builder: AlertDialog.Builder = AlertDialog.Builder(this)
+        builder.setTitle("Which statement best describes what you want to do?")
+        builder.setItems(
+            arrayOf<CharSequence>(
                 getString(R.string.i_work_in_the_spr_rts),
                 getString(R.string.i_am_a_courier_rts)
             )
-            ) { _, which ->
-                when (which) {
-                    0 -> goToUrl(getBaseUrl() + RTS_SPR_ROUTE)
-                    1 -> goToUrl(getBaseUrl() + RTS_COURIER_ROUTE)
-                }
+        ) { _, which ->
+            when (which) {
+                0 -> goToUrl(getBaseUrl() + RTS_SPR_ROUTE)
+                1 -> goToUrl(getBaseUrl() + RTS_COURIER_ROUTE)
             }
-            builder.setNegativeButton("Cancel") { _: DialogInterface, _: Int -> }
-            builder.create().show()
         }
+        builder.setNegativeButton("Cancel") { _: DialogInterface, _: Int -> }
+        builder.create().show()
+    }
+
+    private fun handleMoveItems() {
+        val builder: AlertDialog.Builder = AlertDialog.Builder(this)
+        builder.setTitle("Which statement best describes what you want to do?")
+        builder.setItems(
+            arrayOf<CharSequence>(
+                "I am processing received items at a postal hub; I want to notify students",
+                "I am re-organising items, I don't want notifications"
+            )
+        ) { _, which ->
+            when (which) {
+                0 -> goToUrl(getBaseUrl() + MOVE_ITEMS_ROUTE + "?hub")
+                1 -> goToUrl(getBaseUrl() + MOVE_ITEMS_ROUTE)
+            }
+        }
+        builder.setNegativeButton("Cancel") { _: DialogInterface, _: Int -> }
+        builder.create().show()
     }
 
     private fun goToUrl(uriString: String) {
