@@ -78,14 +78,28 @@ class OcrImageAnalyzer(
                     imageProxy.close()
 
                     var foundId = false
+                    val regexStrict = "(?<![\\d-])([0-9]{7})(-[A-Za-z])".toRegex()
+
                     var lastBb: Rect? = null
                     for (block in visionText.textBlocks) {
                         for (line in block.lines) {
                             for (element in line.elements) {
-                                if (element.text.trim().matches("^[0-9]{7}$".toRegex())) {
-                                    cameraViewModel.uniId.value = element.text.trim()
+                                val trim = element.text.trim()
+                                if (!foundId && trim.matches("^[0-9]{7}$".toRegex())) {
+                                    cameraViewModel.uniId.value = trim
                                     lastBb = element.boundingBox
                                     foundId = true
+                                } else if (!foundId && regexStrict.containsMatchIn(trim)) {
+                                    cameraViewModel.uniId.value = regexStrict.find(trim)!!.groupValues.drop(1).first()
+                                    lastBb = element.boundingBox
+                                    foundId = true
+                                } else if (!foundId) {
+                                    val regex = "(?<![\\d-])([0-9]{7})(?![/\\d])".toRegex()
+                                    if (regex.containsMatchIn(trim)) {
+                                        cameraViewModel.uniId.value = regex.find(trim)!!.groupValues.drop(1).first()
+                                        lastBb = element.boundingBox
+                                        foundId = true
+                                    }
                                 } else if (element.text.contains("\\d".toRegex())) {
                                     Log.i(TAG, element.text)
                                 }

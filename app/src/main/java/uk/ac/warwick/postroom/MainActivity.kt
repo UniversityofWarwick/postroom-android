@@ -7,24 +7,31 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
-import android.graphics.Camera
 import android.net.Uri
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.nfc.tech.MifareClassic
 import android.os.Build
 import android.os.Bundle
+import android.provider.Browser
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Button
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.*
+import androidx.lifecycle.Observer
 import androidx.preference.PreferenceManager.getDefaultSharedPreferences
+import dagger.hilt.android.AndroidEntryPoint
+import uk.ac.warwick.postroom.services.CustomTabsService
+import uk.ac.warwick.postroom.services.SscPersistenceService
 import uk.ac.warwick.postroom.ui.main.SettingsActivity
+import uk.ac.warwick.postroom.vm.HomeViewModel
 import java.io.IOException
+import javax.inject.Inject
 
 
 const val POSTROOM_BASE_URL_DEFAULT = "https://postroom.warwick.ac.uk/"
@@ -39,17 +46,26 @@ const val SSO_PROD_AUTHORITY = "websignon.warwick.ac.uk"
 
 const val TAG = "Postroom"
 
+const val SSC_NAME = "SSO-Postroom-SSC-Domain"
+
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     var mAdapter: NfcAdapter? = null
     var pendingIntent: PendingIntent? = null
+
+    @Inject lateinit var customTabsService: CustomTabsService
+    @Inject lateinit var sscPersistenceService: SscPersistenceService
 
     private var customTabsSession: CustomTabsSession? = null
     private var tabsConnection: CustomTabsServiceConnection? = null
     private var universityId: String? = null
 
+    private val model: HomeViewModel by viewModels()
+
     @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContentView(R.layout.main_activity)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
 
@@ -85,6 +101,11 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.move_items).setOnClickListener {
             handleMoveItems()
         }
+
+        model.usercode.observe(this, Observer<String> { newUsercode ->
+            Log.i(TAG, "New usercode")
+            Toast.makeText(this, "Logged in as $newUsercode", Toast.LENGTH_SHORT).show()
+        })
     }
 
     private fun handleRts() {
@@ -104,6 +125,8 @@ class MainActivity : AppCompatActivity() {
         builder.setNegativeButton("Cancel") { _: DialogInterface, _: Int -> }
         builder.create().show()
     }
+
+
 
     private fun handleMoveItems() {
         val builder: AlertDialog.Builder = AlertDialog.Builder(this)
@@ -156,7 +179,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         val inflater = menuInflater
         inflater.inflate(R.menu.toolbar, menu)
-        return true
+        return true // to show the menu
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -178,7 +201,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun buildCustomTabsIntent(): CustomTabsIntent {
-        return CustomTabsIntent.Builder(customTabsSession)
+        val intent = CustomTabsIntent.Builder(customTabsSession)
             .setToolbarColor(
                 getColor(R.color.colorPrimaryDark)
             )
@@ -189,6 +212,12 @@ class MainActivity : AppCompatActivity() {
                 android.R.anim.slide_out_right
             )
             .build()
+
+        val headers = Bundle()
+        // hilarious abuse of HTTP but I have my reasons for doing this
+        headers.putString("Accept-Language", "POSTROOM")
+        intent.intent.putExtra(Browser.EXTRA_HEADERS, headers)
+        return intent
     }
 
 
@@ -214,48 +243,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val pm = applicationContext.packageManager
-        var packageToUse = "com.android.chrome"
 
-        // Use a representative URL to work out which packages are capable of opening a typical tab
-        val activityIntent =
-            Intent(Intent.ACTION_VIEW, Uri.parse("https://warwick.ac.uk"))
-
-        // Does the user have a default browser?
-        var defaultViewHandlerPackageName: String? = null
-        val defaultViewHandlerInfo = pm.resolveActivity(activityIntent, 0)
-        if (defaultViewHandlerInfo != null) {
-            defaultViewHandlerPackageName = defaultViewHandlerInfo.activityInfo.packageName
-        }
-
-        val resolvedActivityList =
-            pm.queryIntentActivities(activityIntent, 0)
-        val packagesSupportingCustomTabs: MutableList<String> =
-            ArrayList()
-        for (info in resolvedActivityList) {
-            val serviceIntent = Intent()
-            serviceIntent.action = CustomTabsService.ACTION_CUSTOM_TABS_CONNECTION
-            serviceIntent.setPackage(info.activityInfo.packageName)
-            // Check if this package also resolves the Custom Tabs service.
-            if (pm.resolveService(serviceIntent, 0) != null) { // Great, add it to the list
-                packagesSupportingCustomTabs.add(info.activityInfo.packageName)
-            }
-        }
-
-        if (packagesSupportingCustomTabs.isNotEmpty()) {
-            // prefer the user's default browser if it supports custom tabs
-            packageToUse =
-                if (packagesSupportingCustomTabs.contains(defaultViewHandlerPackageName)) {
-                    defaultViewHandlerPackageName!!
-                } else {
-                    // arbitrarily pick the first one
-                    packagesSupportingCustomTabs[0]
-                }
-        }
 
         CustomTabsClient.bindCustomTabsService(
             this,
-            packageToUse,
+            customTabsService.getPackageToUse(),
             tabsConnection as CustomTabsServiceConnection
         )
     }
@@ -330,9 +322,18 @@ class MainActivity : AppCompatActivity() {
         handleIntent(intent)
     }
 
+
+
     private fun handleIntent(intent: Intent) {
+        if (intent.data?.path == "/app-link/ssc" && intent.data?.getQueryParameter("value") != null) {
+            val ssc = intent.data?.getQueryParameter("value")
+            sscPersistenceService.putSsc(ssc!!)
+            model.testSscRequest(getBaseUrl(), ssc)
+            return
+        }
+
         if (NfcAdapter.ACTION_TECH_DISCOVERED == intent.action) {
-            val detectedTag: Tag? = intent.getParcelableExtra<Tag>(NfcAdapter.EXTRA_TAG)
+            val detectedTag: Tag? = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
             if (detectedTag != null) {
                 val mfc = MifareClassic.get(detectedTag)
                 var data = ByteArray(0)
@@ -410,4 +411,5 @@ class MainActivity : AppCompatActivity() {
             "Title: $titleStr"
         )
     }
+
 }
