@@ -53,6 +53,14 @@ class SettingsActivity : AppCompatActivity() {
                 Log.i(TAG, "Custom Tabs service connected")
                 client.warmup(0)
                 customTabsSession = client.newSession(CustomTabsCallback())
+
+                if (this@SettingsActivity.intent.getBooleanExtra("link", false)) {
+                    val intent = getCustomTabsIntent(this@SettingsActivity)
+                    intent.launchUrl(
+                        this@SettingsActivity,
+                        Uri.parse(this@SettingsActivity.customTabsService.getBaseUrl() + "begin-app-link/")
+                    )
+                }
             }
 
             override fun onServiceDisconnected(name: ComponentName) {
@@ -89,7 +97,7 @@ class SettingsActivity : AppCompatActivity() {
                 "link" -> {
 
                     val settingsActivity = activity as SettingsActivity
-                    val intent = getCustomTabsIntent(settingsActivity)
+                    val intent = settingsActivity.getCustomTabsIntent(settingsActivity)
                     intent.launchUrl(
                         requireContext(),
                         Uri.parse(settingsActivity.customTabsService.getBaseUrl() + "begin-app-link/")
@@ -98,7 +106,7 @@ class SettingsActivity : AppCompatActivity() {
 
                 "logout" -> {
                     val settingsActivity = activity as SettingsActivity
-                    val intent = getCustomTabsIntent(settingsActivity)
+                    val intent = settingsActivity.getCustomTabsIntent(settingsActivity)
                     val builder = Uri.Builder()
                     builder.scheme("https").authority(SSO_PROD_AUTHORITY).appendPath("origin")
                         .appendPath("logout")
@@ -112,26 +120,6 @@ class SettingsActivity : AppCompatActivity() {
             }
             return super.onPreferenceTreeClick(preference)
         }
-
-        private fun getCustomTabsIntent(settingsActivity: SettingsActivity): CustomTabsIntent {
-            return CustomTabsIntent.Builder(settingsActivity.customTabsSession)
-                .setToolbarColor(
-                    getColor(requireContext(), R.color.colorPrimaryDark)
-                )
-                .setStartAnimations(
-                    requireContext(),
-                    R.anim.slide_in_right,
-                    R.anim.slide_out_left
-                )
-                .setExitAnimations(
-                    requireContext(),
-                    android.R.anim.slide_in_left,
-                    android.R.anim.slide_out_right
-                )
-                .build()
-        }
-
-
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -142,5 +130,23 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    fun getCustomTabsIntent(settingsActivity: SettingsActivity): CustomTabsIntent {
+        return CustomTabsIntent.Builder(settingsActivity.customTabsSession)
+            .setToolbarColor(
+                getColor(settingsActivity, R.color.colorPrimaryDark)
+            )
+            .setStartAnimations(
+                settingsActivity,
+                R.anim.slide_in_right,
+                R.anim.slide_out_left
+            )
+            .setExitAnimations(
+                settingsActivity,
+                android.R.anim.slide_in_left,
+                android.R.anim.slide_out_right
+            )
+            .build()
     }
 }
