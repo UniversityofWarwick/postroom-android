@@ -54,6 +54,16 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
+        android:id="@+id/detectedRoomLbl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginTop="10dp"
+        android:text="No room"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/uniIdLbl" />
+
+    <TextView
         android:id="@+id/qrId"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -61,7 +71,7 @@
         android:layout_marginTop="10dp"
         android:text="No QR"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/uniIdLbl" />
+        app:layout_constraintTop_toBottomOf="@+id/detectedRoomLbl" />
 
     <TextView
         android:id="@+id/trackingLbl"
@@ -92,5 +102,20 @@
         android:text="0 barcodes in shot"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/trackingLbl" />
+
+    <TextView
+        android:id="@+id/uniIdCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginTop="10dp"
+        android:text="Loading university IDs..."
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/barcodeCount" />
+
+    <nl.dionsegijn.konfetti.KonfettiView
+        android:id="@+id/viewKonfetti"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

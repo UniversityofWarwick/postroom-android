@@ -11,6 +11,8 @@ class SscPersistenceServiceImpl @Inject constructor(
 ) : SscPersistenceService {
 
     override fun putSsc(ssc: String) = secureSharedPreferences.edit().putString("ssc", ssc).apply()
+    override fun clearSsc() = secureSharedPreferences.edit().remove("ssc").apply()
+
     override fun getSsc(): String? = secureSharedPreferences.getString("ssc", null)
 
     private val secureSharedPreferences by lazy {

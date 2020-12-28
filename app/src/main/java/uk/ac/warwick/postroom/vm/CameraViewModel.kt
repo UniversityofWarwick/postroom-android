@@ -3,10 +3,17 @@ package uk.ac.warwick.postroom.vm
 import android.graphics.Rect
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import uk.ac.warwick.postroom.services.CachedRecipientDataService
 
 class CameraViewModel : ViewModel() {
 
     val uniId: MutableLiveData<String> by lazy {
+        MutableLiveData<String>()
+    }
+
+    val room: MutableLiveData<String> by lazy {
         MutableLiveData<String>()
     }
 
@@ -36,5 +43,20 @@ class CameraViewModel : ViewModel() {
 
     val trackingFormat: MutableLiveData<String> by lazy {
         MutableLiveData<String>()
+    }
+
+    val uniIds: MutableLiveData<Map<String, String>> by lazy {
+        MutableLiveData<Map<String, String>>()
+    }
+
+    val rooms: MutableLiveData<Map<String, String>> by lazy {
+        MutableLiveData<Map<String, String>>()
+    }
+
+    fun cacheData(cachedRecipientDataService: CachedRecipientDataService) {
+        viewModelScope.launch {
+            cachedRecipientDataService.getUniversityIdToUuidMap { uniIds.postValue(it) }
+            cachedRecipientDataService.getRoomToUuidMap { rooms.postValue(it) }
+        }
     }
 }

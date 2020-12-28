@@ -10,6 +10,7 @@ import com.google.mlkit.vision.barcode.Barcode
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
+import uk.ac.warwick.postroom.activities.TAG
 import uk.ac.warwick.postroom.vm.CameraViewModel
 
 class OcrImageAnalyzer(
@@ -81,22 +82,28 @@ class OcrImageAnalyzer(
                     val regexStrict = "(?<![\\d-])([0-9]{7})(-[A-Za-z])".toRegex()
 
                     var lastBb: Rect? = null
+                    var lastUniId: String? = null
                     for (block in visionText.textBlocks) {
                         for (line in block.lines) {
                             for (element in line.elements) {
                                 val trim = element.text.trim()
+
+                                if (cameraViewModel.rooms.value?.containsKey(trim) == true) {
+                                    cameraViewModel.room.value = trim
+                                }
+
                                 if (!foundId && trim.matches("^[0-9]{7}$".toRegex())) {
-                                    cameraViewModel.uniId.value = trim
+                                    lastUniId = trim
                                     lastBb = element.boundingBox
                                     foundId = true
                                 } else if (!foundId && regexStrict.containsMatchIn(trim)) {
-                                    cameraViewModel.uniId.value = regexStrict.find(trim)!!.groupValues.drop(1).first()
+                                    lastUniId = regexStrict.find(trim)!!.groupValues.drop(1).first()
                                     lastBb = element.boundingBox
                                     foundId = true
                                 } else if (!foundId) {
                                     val regex = "(?<![\\d-])([0-9]{7})(?![/\\d])".toRegex()
                                     if (regex.containsMatchIn(trim)) {
-                                        cameraViewModel.uniId.value = regex.find(trim)!!.groupValues.drop(1).first()
+                                        lastUniId = regex.find(trim)!!.groupValues.drop(1).first()
                                         lastBb = element.boundingBox
                                         foundId = true
                                     }
@@ -110,8 +117,9 @@ class OcrImageAnalyzer(
                             }
                         }
                     }
-                    if (foundId) {
+                    if (foundId && cameraViewModel.uniIds.value?.containsKey(lastUniId!!) == true) {
                         cameraViewModel.uniIdBoundingBox.value = lastBb
+                        cameraViewModel.uniId.value = lastUniId!!
                     } else {
                         cameraViewModel.uniIdBoundingBox.value = null
                     }

@@ -32,7 +32,6 @@ import android.view.*
 import android.widget.ImageButton
 import android.widget.Toast
 import androidx.camera.core.*
-import androidx.camera.core.Camera
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -42,16 +41,21 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.Navigation
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.camera_ui_container.*
-import uk.ac.warwick.postroom.KEY_EVENT_ACTION
-import uk.ac.warwick.postroom.KEY_EVENT_EXTRA
+import nl.dionsegijn.konfetti.KonfettiView
+import nl.dionsegijn.konfetti.models.Shape
 import uk.ac.warwick.postroom.OcrImageAnalyzer
 import uk.ac.warwick.postroom.R
+import uk.ac.warwick.postroom.activities.KEY_EVENT_ACTION
+import uk.ac.warwick.postroom.activities.KEY_EVENT_EXTRA
+import uk.ac.warwick.postroom.services.CachedRecipientDataService
 import uk.ac.warwick.postroom.utils.simulateClick
 import uk.ac.warwick.postroom.vm.CameraViewModel
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import javax.inject.Inject
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -62,12 +66,16 @@ import kotlin.math.min
  * - Photo taking
  * - Image analysis
  */
+@AndroidEntryPoint
 class CameraFragment : Fragment() {
 
     private lateinit var container: ConstraintLayout
     private lateinit var viewFinder: PreviewView
     private lateinit var outputDirectory: File
     private lateinit var broadcastManager: LocalBroadcastManager
+
+    @Inject
+    lateinit var cachedRecipientDataService: CachedRecipientDataService
 
     private var displayId: Int = -1
     private var preview: Preview? = null
@@ -141,8 +149,10 @@ class CameraFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? =
-        inflater.inflate(R.layout.fragment_camera, container, false)
+    ): View? {
+        model.cacheData(cachedRecipientDataService)
+        return inflater.inflate(R.layout.fragment_camera, container, false)
+    }
 
     private val model: CameraViewModel by viewModels()
 
@@ -154,10 +164,18 @@ class CameraFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
 
-        model.uniId.observe(viewLifecycleOwner, Observer<String> { newUniId ->
+        model.uniId.observe(viewLifecycleOwner, { newUniId ->
             // Update the UI, in this case, a TextView.
             if (uniIdLbl != null && uniIdLbl?.text != newUniId) {
                 uniIdLbl.text = newUniId
+                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            }
+        })
+
+        model.room.observe(viewLifecycleOwner, { newRoom ->
+            // Update the UI, in this case, a TextView.
+            if (detectedRoomLbl != null && detectedRoomLbl?.text != newRoom) {
+                detectedRoomLbl.text = newRoom
                 view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             }
         })
@@ -174,6 +192,12 @@ class CameraFragment : Fragment() {
         model.barcodes.observe(viewLifecycleOwner, Observer<Int> { num ->
             if (barcodeCount != null) {
                 barcodeCount.text = "$num barcode${if (num != 1) "s" else ""} decoded"
+            }
+        })
+
+        model.uniIds.observe(viewLifecycleOwner, { uniIds ->
+            if (uniIdCount != null) {
+                uniIdCount.text = "${uniIds.keys.size} known resident uni IDs"
             }
         })
 
@@ -406,6 +430,30 @@ class CameraFragment : Fragment() {
         // Listener for button used to capture photo
         controls.findViewById<ImageButton>(R.id.camera_capture_button).setOnClickListener {
             view?.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            val confetti = controls.findViewById<KonfettiView>(R.id.viewKonfetti)
+            // ["#1e90ff","#6b8e23","#ffd700","#ffc0cb","#6a5acd","#add8e6","#ee82ee","#98fb98","#4682b4","#f4a460","#d2691e","#dc143c"]
+            confetti.build()
+                .addColors(
+                    Color.parseColor("#1e90ff"),
+                    Color.parseColor("#6b8e23"),
+                    Color.parseColor("#ffd700"),
+                    Color.parseColor("#ffc0cb"),
+                    Color.parseColor("#6a5acd"),
+                    Color.parseColor("#add8e6"),
+                    Color.parseColor("#ee82ee"),
+                    Color.parseColor("#98fb98"),
+                    Color.parseColor("#4682b4"),
+                    Color.parseColor("#f4a460"),
+                    Color.parseColor("#d2691e"),
+                    Color.parseColor("#dc143c")
+                )
+                .setDirection(0.0, 359.0)
+                .setSpeed(5f, 5f)
+                .setTimeToLive(5000L)
+                .addShapes(Shape.Square, Shape.Circle)
+                .addSizes(nl.dionsegijn.konfetti.models.Size(12))
+                .setPosition(-50f, confetti.width + 50f, -50f, -50f)
+                .streamFor(900, 500L)
             Toast.makeText(context, "This button could do something", Toast.LENGTH_SHORT).show()
         }
 

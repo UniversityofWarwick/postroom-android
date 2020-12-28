@@ -1,20 +1,17 @@
-package uk.ac.warwick.postroom.ui.main
+package uk.ac.warwick.postroom.activities
 
 import android.content.ComponentName
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.*
 import androidx.core.content.ContextCompat.getColor
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import dagger.hilt.android.AndroidEntryPoint
-import uk.ac.warwick.postroom.PROCESS_INCOMING_ROUTE
 import uk.ac.warwick.postroom.R
-import uk.ac.warwick.postroom.SSO_PROD_AUTHORITY
 import uk.ac.warwick.postroom.services.CustomTabsService
 import javax.inject.Inject
 
@@ -53,13 +50,13 @@ class SettingsActivity : AppCompatActivity() {
                 name: ComponentName,
                 client: CustomTabsClient
             ) {
-                Log.i(uk.ac.warwick.postroom.TAG, "Custom Tabs service connected")
+                Log.i(TAG, "Custom Tabs service connected")
                 client.warmup(0)
                 customTabsSession = client.newSession(CustomTabsCallback())
             }
 
             override fun onServiceDisconnected(name: ComponentName) {
-                Log.e(uk.ac.warwick.postroom.TAG, "Custom Tabs service disconnected/crashed")
+                Log.e(TAG, "Custom Tabs service disconnected/crashed")
                 customTabsSession = null
             }
         }
@@ -72,7 +69,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     fun deinitCustomTabs() {
-        Log.i(uk.ac.warwick.postroom.TAG, "Disconnecting custom tabs")
+        Log.i(TAG, "Disconnecting custom tabs")
         if (tabsConnection != null) {
             unbindService(tabsConnection!!)
             tabsConnection = null

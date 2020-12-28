@@ -5,7 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.qualifiers.ApplicationContext
-import uk.ac.warwick.postroom.POSTROOM_BASE_URL_DEFAULT
+import uk.ac.warwick.postroom.activities.POSTROOM_BASE_URL_DEFAULT
 import uk.ac.warwick.postroom.R
 import javax.inject.Inject
 
