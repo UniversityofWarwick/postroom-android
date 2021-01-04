@@ -18,7 +18,7 @@
     <string name="boxes_in_a_pile">Boxes in a pile</string>
     <string name="nfc_logo">NFC Logo</string>
     <string name="instance_url_pref_id">instance_url</string>
-    <string name="switch_user">Switch user</string>
+    <string name="switch_user">Logout</string>
     <string name="return_to_sender">Return to sender</string>
     <string name="i_am_a_courier_rts">I\'m a courier and am collecting items that have already been set-aside.</string>
     <string name="i_work_in_the_spr_rts">I work in the post room and need to move uncollected items onto an RTS shelf.</string>

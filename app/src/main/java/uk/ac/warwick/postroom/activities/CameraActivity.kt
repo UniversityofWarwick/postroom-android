@@ -1,22 +1,18 @@
-package uk.ac.warwick.postroom
+package uk.ac.warwick.postroom.activities
 
-import android.content.Context
-import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.KeyEvent
 import android.widget.FrameLayout
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.appcompat.app.AppCompatActivity
+import dagger.hilt.android.AndroidEntryPoint
+import uk.ac.warwick.postroom.R
 import uk.ac.warwick.postroom.utils.FLAGS_FULLSCREEN
-import java.io.File
 
 const val KEY_EVENT_ACTION = "key_event_action"
 const val KEY_EVENT_EXTRA = "key_event_extra"
 private const val IMMERSIVE_FLAG_TIMEOUT = 500L
 
-
+@AndroidEntryPoint
 class CameraActivity : AppCompatActivity() {
-
 
     private lateinit var container: FrameLayout
 

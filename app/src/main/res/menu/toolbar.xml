@@ -2,11 +2,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/switchUserBtn"
-        android:icon="@drawable/ic_baseline_person_24"
-        android:title="@string/switch_user"
-        app:showAsAction="ifRoom" />
-    <item
         android:id="@+id/settingsBtn"
         android:icon="@drawable/ic_settings_24px"
         android:title="@string/settings"
@@ -16,4 +11,19 @@
         android:icon="@drawable/ic_baseline_camera_alt_24"
         android:title="@string/camera"
         app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/shelfAuditMenuItem"
+        android:title="Shelf audit"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/rtsMenuItem"
+        android:title="Return to sender"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/moveItemsMenuItem"
+        android:title="Change item locations"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/viewRecentActivityMenuItem"
+        android:title="View my activity" />
 </menu>

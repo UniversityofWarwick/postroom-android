@@ -1,20 +1,17 @@
-package uk.ac.warwick.postroom.ui.main
+package uk.ac.warwick.postroom.activities
 
 import android.content.ComponentName
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.*
 import androidx.core.content.ContextCompat.getColor
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import dagger.hilt.android.AndroidEntryPoint
-import uk.ac.warwick.postroom.PROCESS_INCOMING_ROUTE
 import uk.ac.warwick.postroom.R
-import uk.ac.warwick.postroom.SSO_PROD_AUTHORITY
 import uk.ac.warwick.postroom.services.CustomTabsService
 import javax.inject.Inject
 
@@ -37,6 +34,10 @@ class SettingsActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
+    fun onEventStarted() {
+        // 
+    }
+
     override fun onStart() {
         super.onStart()
         initCustomTabs()
@@ -53,13 +54,21 @@ class SettingsActivity : AppCompatActivity() {
                 name: ComponentName,
                 client: CustomTabsClient
             ) {
-                Log.i(uk.ac.warwick.postroom.TAG, "Custom Tabs service connected")
+                Log.i(TAG, "Custom Tabs service connected")
                 client.warmup(0)
                 customTabsSession = client.newSession(CustomTabsCallback())
+
+                if (this@SettingsActivity.intent.getBooleanExtra("link", false)) {
+                    val intent = getCustomTabsIntent(this@SettingsActivity)
+                    intent.launchUrl(
+                        this@SettingsActivity,
+                        Uri.parse(this@SettingsActivity.customTabsService.getBaseUrl() + "begin-app-link/")
+                    )
+                }
             }
 
             override fun onServiceDisconnected(name: ComponentName) {
-                Log.e(uk.ac.warwick.postroom.TAG, "Custom Tabs service disconnected/crashed")
+                Log.e(TAG, "Custom Tabs service disconnected/crashed")
                 customTabsSession = null
             }
         }
@@ -72,7 +81,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     fun deinitCustomTabs() {
-        Log.i(uk.ac.warwick.postroom.TAG, "Disconnecting custom tabs")
+        Log.i(TAG, "Disconnecting custom tabs")
         if (tabsConnection != null) {
             unbindService(tabsConnection!!)
             tabsConnection = null
@@ -92,7 +101,7 @@ class SettingsActivity : AppCompatActivity() {
                 "link" -> {
 
                     val settingsActivity = activity as SettingsActivity
-                    val intent = getCustomTabsIntent(settingsActivity)
+                    val intent = settingsActivity.getCustomTabsIntent(settingsActivity)
                     intent.launchUrl(
                         requireContext(),
                         Uri.parse(settingsActivity.customTabsService.getBaseUrl() + "begin-app-link/")
@@ -101,7 +110,7 @@ class SettingsActivity : AppCompatActivity() {
 
                 "logout" -> {
                     val settingsActivity = activity as SettingsActivity
-                    val intent = getCustomTabsIntent(settingsActivity)
+                    val intent = settingsActivity.getCustomTabsIntent(settingsActivity)
                     val builder = Uri.Builder()
                     builder.scheme("https").authority(SSO_PROD_AUTHORITY).appendPath("origin")
                         .appendPath("logout")
@@ -115,26 +124,6 @@ class SettingsActivity : AppCompatActivity() {
             }
             return super.onPreferenceTreeClick(preference)
         }
-
-        private fun getCustomTabsIntent(settingsActivity: SettingsActivity): CustomTabsIntent {
-            return CustomTabsIntent.Builder(settingsActivity.customTabsSession)
-                .setToolbarColor(
-                    getColor(requireContext(), R.color.colorPrimaryDark)
-                )
-                .setStartAnimations(
-                    requireContext(),
-                    R.anim.slide_in_right,
-                    R.anim.slide_out_left
-                )
-                .setExitAnimations(
-                    requireContext(),
-                    android.R.anim.slide_in_left,
-                    android.R.anim.slide_out_right
-                )
-                .build()
-        }
-
-
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -145,5 +134,23 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    fun getCustomTabsIntent(settingsActivity: SettingsActivity): CustomTabsIntent {
+        return CustomTabsIntent.Builder(settingsActivity.customTabsSession)
+            .setToolbarColor(
+                getColor(settingsActivity, R.color.colorPrimaryDark)
+            )
+            .setStartAnimations(
+                settingsActivity,
+                R.anim.slide_in_right,
+                R.anim.slide_out_left
+            )
+            .setExitAnimations(
+                settingsActivity,
+                android.R.anim.slide_in_left,
+                android.R.anim.slide_out_right
+            )
+            .build()
     }
 }
