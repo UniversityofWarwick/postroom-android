@@ -60,12 +60,13 @@
         app:layout_constraintTop_toBottomOf="@+id/uniIdLbl" />
 
     <TextView
-        android:id="@+id/techDemo"
+        android:id="@+id/statusIndicator"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:layout_marginEnd="14dp"
-        android:text="Tech demo"
+        android:text=""
+        android:textSize="60sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -100,7 +101,7 @@
         app:layout_constraintTop_toBottomOf="@+id/trackingLbl" />
 
     <TextView
-        android:id="@+id/uniIdCount"
+        android:id="@+id/dataCount"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="14dp"
@@ -108,5 +109,15 @@
         android:text="Loading university IDs..."
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/barcodeCount" />
+
+    <TextView
+        android:id="@+id/courier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginTop="10dp"
+        android:text="No courier guess"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/dataCount" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

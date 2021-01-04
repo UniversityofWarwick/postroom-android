@@ -50,7 +50,10 @@ import uk.ac.warwick.postroom.OcrImageAnalyzer
 import uk.ac.warwick.postroom.R
 import uk.ac.warwick.postroom.activities.KEY_EVENT_ACTION
 import uk.ac.warwick.postroom.activities.KEY_EVENT_EXTRA
-import uk.ac.warwick.postroom.services.CachedRecipientDataService
+import uk.ac.warwick.postroom.domain.BarcodeFormat
+import uk.ac.warwick.postroom.domain.RecognisedBarcode
+import uk.ac.warwick.postroom.services.CourierMatchService
+import uk.ac.warwick.postroom.services.RecipientDataService
 import uk.ac.warwick.postroom.utils.simulateClick
 import uk.ac.warwick.postroom.vm.CameraViewModel
 import java.io.File
@@ -76,7 +79,10 @@ class CameraFragment : Fragment() {
     private lateinit var broadcastManager: LocalBroadcastManager
 
     @Inject
-    lateinit var cachedRecipientDataService: CachedRecipientDataService
+    lateinit var recipientDataService: RecipientDataService
+
+    @Inject
+    lateinit var courierMatchService: CourierMatchService
 
     private var displayId: Int = -1
     private var preview: Preview? = null
@@ -151,7 +157,7 @@ class CameraFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        model.cacheData(cachedRecipientDataService)
+        model.cacheData(recipientDataService, courierMatchService)
         return inflater.inflate(R.layout.fragment_camera, container, false)
     }
 
@@ -169,54 +175,85 @@ class CameraFragment : Fragment() {
             // Update the UI, in this case, a TextView.
             if (uniIdLbl != null && uniIdLbl?.text != newUniId) {
                 uniIdLbl.text = newUniId
-                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             }
+        })
+
+        model.uniId.observe(viewLifecycleOwner, {
+            evaluateCurrentStatus()
+        })
+
+        model.room.observe(viewLifecycleOwner, {
+            evaluateCurrentStatus()
         })
 
         model.room.observe(viewLifecycleOwner, { newRoom ->
             // Update the UI, in this case, a TextView.
             if (detectedRoomLbl != null && detectedRoomLbl?.text != newRoom) {
                 detectedRoomLbl.text = newRoom
-                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            }
-        })
-
-        model.trackingFormat.observe(viewLifecycleOwner, Observer<String> { format ->
-            // Update the UI, in this case, a TextView.
-            val trackingText = "Last barcode: ${model.trackingBarcode.value!!} - $format"
-            if (trackingLbl != null && trackingLbl?.text != trackingText) {
-                trackingLbl.text = trackingText
-                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             }
         })
 
         model.barcodes.observe(viewLifecycleOwner, Observer<Int> { num ->
             if (barcodeCount != null) {
-                barcodeCount.text = "$num barcode${if (num != 1) "s" else ""} decoded"
+                barcodeCount.text = "$num barcode${if (num != 1) "s" else ""} in shot"
             }
         })
+
+        model.allCollectedBarcodes.observe(
+            viewLifecycleOwner,
+            { barcodes ->
+                val courierGuess = barcodes.map {
+                    it to courierMatchService.guessFromBarcode(
+                        model.courierPatterns.value ?: emptyList(),
+                        it
+                    )
+                }.firstOrNull { it.second != null }
+                if (courier != null) {
+                    courier.text = "${courierGuess?.second?.courier?.name ?: "No courier guess"}"
+                }
+                model.courierGuess.postValue(courierGuess?.second?.courier)
+                val bestBarcode = courierGuess?.first ?: courierMatchService.excludeRejects(
+                    model.courierPatterns.value ?: emptyList(), barcodes
+                ).firstOrNull()
+
+                if (bestBarcode != null) {
+                    model.bestBarcode.postValue(bestBarcode)
+                }
+
+                if (trackingLbl != null && bestBarcode != null && trackingLbl?.text != bestBarcode.barcode) {
+                    trackingLbl.text = "Best barcode: " + bestBarcode.barcode
+                }
+                evaluateCurrentStatus()
+            })
 
         model.uniIds.observe(viewLifecycleOwner, { uniIds ->
-            if (uniIdCount != null) {
-                uniIdCount.text = "${uniIds.keys.size} known resident uni IDs"
+            if (dataCount != null) {
+                dataCount.text =
+                    "${uniIds.size} known resident uni IDs, ${model.courierPatterns.value?.size ?: "?"} courier patterns"
             }
         })
 
-        model.qrId.observe(viewLifecycleOwner, Observer<String> { newQrId ->
+        model.courierPatterns.observe(viewLifecycleOwner, { courierPatterns ->
+            if (dataCount != null) {
+                dataCount.text =
+                    "${model.uniIds.value?.keys?.size ?: "?"} known resident uni IDs, ${courierPatterns.size} courier patterns"
+            }
+        })
+
+        model.qrId.observe(viewLifecycleOwner, { newQrId ->
             // Update the UI, in this case, a TextView.
             if (qrId != null && qrId?.text != newQrId) {
                 qrId.text = newQrId
-
                 view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             }
         })
 
-        model.uniIdBoundingBox.observe(viewLifecycleOwner, Observer<Rect> { newRect ->
+        model.uniIdBoundingBox.observe(viewLifecycleOwner, { newRect ->
             Log.i(TAG, "Got new rect $canvas")
             if (newRect != null && canvas) {
                 Log.i(TAG, "gonna draw")
                 val canvas = surfaceView.holder.lockCanvas()
-                var rect: RectF
+                val rect: RectF
                 if (isPortraitMode()) {
                     scaleFactorY = surfaceView.height.toFloat() / (model.width.value ?: 1600)
                     scaleFactorX = surfaceView.width.toFloat() / (model.height.value ?: 1200)
@@ -298,6 +335,31 @@ class CameraFragment : Fragment() {
                 }
 
             })
+        }
+    }
+
+    private fun evaluateCurrentStatus() {
+        if (statusIndicator != null) {
+            if (model.recipientGuesses.value?.size == 2 && model.recipientGuesses.value!!.distinctBy { it.id }.size == 1) {
+                statusIndicator.text = "\uD83D\uDE03"
+            } else if (model.recipientGuesses.value?.size == 2 && model.recipientGuesses.value!!.distinctBy { it.id }.size == 2) {
+                statusIndicator.text = "‼️"
+            } else if (model.recipientGuesses.value?.size == 1) {
+                statusIndicator.text = "\uD83D\uDE42"
+            } else {
+                statusIndicator.text = "⏳"
+            }
+
+            if (model.courierGuess.value != null) {
+                statusIndicator.text = (statusIndicator.text.toString() + "✅")
+            } else {
+                statusIndicator.text = (statusIndicator.text.toString() + "❌")
+            }
+
+            if (barcodeCount != null) {
+                barcodeCount.text = (model.barcodes.value ?: 0).toString() + " barcodes in shot, " + (model.allCollectedBarcodes.value?.size ?: 0).toString() + " total collected"
+            }
+
         }
     }
 

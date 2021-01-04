@@ -20,9 +20,14 @@ abstract class PostroomActivityModule {
     ): CustomTabsService
 
     @Binds
-    abstract fun bindCachedRecipientDataService(
-        cachedRecipientDataServiceImpl: CachedRecipientDataServiceImpl
-    ): CachedRecipientDataService
+    abstract fun bindRecipientDataService(
+        cachedRecipientDataServiceImpl: RecipientDataServiceImpl
+    ): RecipientDataService
+
+    @Binds
+    abstract fun bindCourierMatchPatternService(
+        courierMatchService: CourierMatchServiceImpl
+    ): CourierMatchService
 
     @Binds
     abstract fun bindSscPersistenceService(

@@ -11,6 +11,10 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import uk.ac.warwick.postroom.activities.TAG
+import uk.ac.warwick.postroom.domain.BarcodeFormat
+import uk.ac.warwick.postroom.domain.RecipientGuess
+import uk.ac.warwick.postroom.domain.RecipientGuessType
+import uk.ac.warwick.postroom.domain.RecognisedBarcode
 import uk.ac.warwick.postroom.vm.CameraViewModel
 
 class OcrImageAnalyzer(
@@ -27,44 +31,7 @@ class OcrImageAnalyzer(
         val mediaImage = imageProxy.image
         if (mediaImage != null) {
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-            val scanner = BarcodeScanning.getClient()
-            scanner.process(image)
-                .addOnSuccessListener { barcodes ->
-                    for (barcode in barcodes) {
-                        val uuid =
-                            "[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}".toRegex()
-                        if (cameraViewModel.qrId.value != barcode.rawValue && barcode.format == Barcode.FORMAT_QR_CODE && true == barcode.rawValue?.matches(
-                                uuid
-                            )
-                        ) {
-                            cameraViewModel.qrId.value = barcode.rawValue!!
-                        } else if (barcode.rawValue?.matches(uuid) == false) {
-                            cameraViewModel.trackingBarcode.value = barcode.rawValue!!
-                            cameraViewModel.trackingFormat.value = when(barcode.format) {
-                                Barcode.FORMAT_QR_CODE -> "QR Code"
-                                Barcode.FORMAT_AZTEC -> "Aztec"
-                                Barcode.FORMAT_CODABAR -> "Codabar"
-                                Barcode.FORMAT_CODE_128 -> "CODE 128"
-                                Barcode.FORMAT_CODE_39 -> "CODE 39"
-                                Barcode.FORMAT_DATA_MATRIX -> "Data matrix"
-                                Barcode.FORMAT_CODE_93 -> "Code 93"
-                                Barcode.FORMAT_EAN_13 -> "EAN 13"
-                                Barcode.FORMAT_EAN_8 -> "EAN 8"
-                                Barcode.FORMAT_ITF -> "ITF-14"
-                                Barcode.FORMAT_PDF417 -> "PDF417"
-                                Barcode.FORMAT_UPC_A -> "UPC A"
-                                Barcode.FORMAT_UPC_E -> "UPC E"
-                                else -> "Unknown"
-                            }
-                        }
-                    }
-                    cameraViewModel.barcodes.value = barcodes.size
-                }
-                .addOnFailureListener { e ->
-                    imageProxy.close()
-
-                    Log.e(TAG, e.message, e)
-                }
+            handleBarcodes(image, imageProxy)
 
             val recognizer = TextRecognition.getClient()
             val result = recognizer.process(image)
@@ -80,6 +47,7 @@ class OcrImageAnalyzer(
 
                     var foundId = false
                     val regexStrict = "(?<![\\d-])([0-9]{7})(-[A-Za-z])".toRegex()
+                    var recipientGuessesSet = cameraViewModel.recipientGuesses.value ?: emptySet()
 
                     var lastBb: Rect? = null
                     var lastUniId: String? = null
@@ -90,6 +58,15 @@ class OcrImageAnalyzer(
 
                                 if (cameraViewModel.rooms.value?.containsKey(trim) == true) {
                                     cameraViewModel.room.value = trim
+                                    recipientGuessesSet =
+                                        recipientGuessesSet.plus(
+                                            RecipientGuess(
+                                                trim, RecipientGuessType.Room,
+                                                cameraViewModel.rooms.value!![trim]
+                                                    ?: error("Room entry disappeared")
+                                            )
+                                        )
+
                                 }
 
                                 if (!foundId && trim.matches("^[0-9]{7}$".toRegex())) {
@@ -120,9 +97,21 @@ class OcrImageAnalyzer(
                     if (foundId && cameraViewModel.uniIds.value?.containsKey(lastUniId!!) == true) {
                         cameraViewModel.uniIdBoundingBox.value = lastBb
                         cameraViewModel.uniId.value = lastUniId!!
+
+                        recipientGuessesSet =
+                            recipientGuessesSet.plus(
+                                RecipientGuess(
+                                    lastUniId, RecipientGuessType.UniversityId,
+                                    cameraViewModel.uniIds.value!![lastUniId]
+                                        ?: error("Uni ID disappeared")
+                                )
+                            )
+
                     } else {
                         cameraViewModel.uniIdBoundingBox.value = null
                     }
+
+                    cameraViewModel.recipientGuesses.postValue(recipientGuessesSet)
                 }
                 .addOnFailureListener { e ->
                     imageProxy.close()
@@ -130,5 +119,56 @@ class OcrImageAnalyzer(
                     Log.e(TAG, e.message, e)
                 }
         }
+    }
+
+    private fun handleBarcodes(
+        image: InputImage,
+        imageProxy: ImageProxy
+    ) {
+        val scanner = BarcodeScanning.getClient()
+        var barcodeSet = cameraViewModel.allCollectedBarcodes.value ?: emptySet()
+
+        scanner.process(image)
+            .addOnSuccessListener { barcodes ->
+                for (barcode in barcodes) {
+                    val uuid =
+                        "[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}".toRegex()
+                    if (cameraViewModel.qrId.value != barcode.rawValue && barcode.format == Barcode.FORMAT_QR_CODE && true == barcode.rawValue?.matches(
+                            uuid
+                        )
+                    ) {
+                        cameraViewModel.qrId.value = barcode.rawValue!!
+                    } else if (barcode.rawValue?.matches(uuid) == false) {
+                        val barcodeFormat = when (barcode.format) {
+                            Barcode.FORMAT_QR_CODE -> BarcodeFormat.Qr
+                            Barcode.FORMAT_AZTEC -> BarcodeFormat.Aztec
+                            Barcode.FORMAT_CODABAR -> BarcodeFormat.Codabar
+                            Barcode.FORMAT_CODE_128 -> BarcodeFormat.Code128
+                            Barcode.FORMAT_CODE_39 -> BarcodeFormat.Code39
+                            Barcode.FORMAT_DATA_MATRIX -> BarcodeFormat.DataMatrix
+                            Barcode.FORMAT_CODE_93 -> BarcodeFormat.Code93
+                            Barcode.FORMAT_EAN_13 -> BarcodeFormat.Ean13
+                            Barcode.FORMAT_EAN_8 -> BarcodeFormat.Ean8
+                            Barcode.FORMAT_ITF -> BarcodeFormat.Itf
+                            Barcode.FORMAT_PDF417 -> BarcodeFormat.Pdf417
+                            Barcode.FORMAT_UPC_A -> BarcodeFormat.UpcA
+                            Barcode.FORMAT_UPC_E -> BarcodeFormat.UpcE
+                            else -> null
+                        }
+
+                        barcodeSet = barcodeSet.plus(
+                            RecognisedBarcode(barcodeFormat, barcode.rawValue!!)
+                        )
+
+                    }
+                }
+                cameraViewModel.allCollectedBarcodes.postValue(barcodeSet)
+                cameraViewModel.barcodes.value = barcodes.size
+            }
+            .addOnFailureListener { e ->
+                imageProxy.close()
+
+                Log.e(TAG, e.message, e)
+            }
     }
 }

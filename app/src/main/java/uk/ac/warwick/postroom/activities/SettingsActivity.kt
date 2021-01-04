@@ -34,6 +34,10 @@ class SettingsActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
+    fun onEventStarted() {
+        // 
+    }
+
     override fun onStart() {
         super.onStart()
         initCustomTabs()
