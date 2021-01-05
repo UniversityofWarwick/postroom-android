@@ -15,7 +15,7 @@ android {
     ndkVersion "21.3.6528147"
     signingConfigs {
         debug {
-            storeFile file('/home/adam/postroom_key_store.jks')
+            storeFile file(keystoreProperties['storeLocation'])
             keyAlias 'upload'
             storePassword keystoreProperties['storePassword']
             keyPassword keystoreProperties['keyPassword']

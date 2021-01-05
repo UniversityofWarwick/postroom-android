@@ -28,4 +28,13 @@
     <string name="move_items">Move items</string>
     <string name="no_id">No ID</string>
     <string name="dynamically_generated">Dynamically generated</string>
+    <string name="add_new_items_card_description">Process new items at sorting office prior to hub distribution.</string>
+    <string name="add_new_items_card_title">Add new items</string>
+    <string name="westwood_student_post_room_image_alt">Westwood Student Post room</string>
+    <string name="boxes_on_shelves_image_alt">Boxes on shelves</string>
+    <string name="finalise_items_at_hub_card_title">Finalise items at hub</string>
+    <string name="finalise_items_at_hub_card_description">Move items at hub onto shelf, informing recipient.</string>
+    <string name="driving_license_img_alt">Driving license</string>
+    <string name="manual_collection_card_title">Manual collection</string>
+    <string name="manual_collection_card_description">Collect items by name, university ID or room. Check recipient\'s ID.</string>
 </resources>
