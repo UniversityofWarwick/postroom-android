@@ -67,8 +67,8 @@ import kotlin.math.min
 /**
  * Main fragment for this app. Implements all camera operations including:
  * - Viewfinder
- * - Photo taking
- * - Image analysis
+ * - Photo "taking"
+ * - Image analysis (barcode scanning, OCR)
  */
 @AndroidEntryPoint
 class CameraFragment : Fragment() {
