@@ -3,18 +3,27 @@
     package="uk.ac.warwick.postroom">
 
     <uses-permission android:name="android.permission.NFC" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:name=".PostroomApplication"
         android:theme="@style/AppTheme">
+        <activity android:name=".activities.CameraActivity" />
+
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="ocr" />
         <activity
-            android:name=".ui.main.SettingsActivity"
+            android:name=".activities.SettingsActivity"
             android:label="@string/title_activity_settings" />
         <activity
-            android:name=".MainActivity"
+            android:name=".activities.MainActivity"
             android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -25,9 +34,36 @@
                 <action android:name="android.nfc.action.TECH_DISCOVERED" />
             </intent-filter>
 
+
             <meta-data
                 android:name="android.nfc.action.TECH_DISCOVERED"
                 android:resource="@xml/tech_list" />
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="postroom"/>
+                <data
+                    android:scheme="https"
+                    android:host="postroom.warwick.ac.uk"
+                    android:pathPattern="/app-link/.*" />
+
+                <data
+                    android:scheme="https"
+                    android:host="frankenstein.warwick.ac.uk"
+                    android:pathPattern="/app-link/.*" />
+
+                <data
+                    android:scheme="https"
+                    android:host="postroom-test.warwick.ac.uk"
+                    android:pathPattern="/app-link/.*" />
+
+                <data
+                    android:scheme="https"
+                    android:host="postroom-dev.warwick.ac.uk"
+                    android:pathPattern="/app-link/.*" />
+            </intent-filter>
         </activity>
     </application>
 

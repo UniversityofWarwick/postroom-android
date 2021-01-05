@@ -1,4 +1,4 @@
-package uk.ac.warwick.postroom
+package uk.ac.warwick.postroom.activities
 
 import android.app.AlertDialog
 import android.app.PendingIntent
@@ -13,17 +13,31 @@ import android.nfc.Tag
 import android.nfc.tech.MifareClassic
 import android.os.Build
 import android.os.Bundle
+import android.provider.Browser
 import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
-import android.widget.Button
+import android.view.*
+import android.view.View.GONE
+import android.view.View.VISIBLE
+import android.widget.ImageView
+import android.widget.PopupMenu
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.*
-import androidx.preference.PreferenceManager.getDefaultSharedPreferences
-import uk.ac.warwick.postroom.ui.main.SettingsActivity
+import androidx.cardview.widget.CardView
+import androidx.lifecycle.Observer
+import com.squareup.picasso.Picasso
+import dagger.hilt.android.AndroidEntryPoint
+import uk.ac.warwick.postroom.R
+import uk.ac.warwick.postroom.services.CustomTabsService
+import uk.ac.warwick.postroom.services.ProvidesBaseUrl
+import uk.ac.warwick.postroom.services.ProvidesBaseUrlImpl
+import uk.ac.warwick.postroom.services.SscPersistenceService
+import uk.ac.warwick.postroom.vm.HomeViewModel
 import java.io.IOException
+import javax.inject.Inject
 
 
 const val POSTROOM_BASE_URL_DEFAULT = "https://postroom.warwick.ac.uk/"
@@ -36,19 +50,42 @@ const val RTS_COURIER_ROUTE = "rts/couriers/"
 const val SHELF_AUDIT_ROUTE = "admin/shelving-audit/"
 const val SSO_PROD_AUTHORITY = "websignon.warwick.ac.uk"
 
-private const val TAG = "Postroom"
+const val TAG = "Postroom"
 
+const val SSC_NAME = "SSO-Postroom-SSC-Domain"
+
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     var mAdapter: NfcAdapter? = null
     var pendingIntent: PendingIntent? = null
+    var accountPhotoView: View? = null
+
+    @Inject
+    lateinit var customTabsService: CustomTabsService
+
+    @Inject
+    lateinit var sscPersistenceService: SscPersistenceService
+
+    @Inject
+    lateinit var providesBaseUrl: ProvidesBaseUrl
 
     private var customTabsSession: CustomTabsSession? = null
     private var tabsConnection: CustomTabsServiceConnection? = null
     private var universityId: String? = null
 
+    private val model: HomeViewModel by viewModels()
+
+    private val view: View?
+        get() {
+            val accountPhotoView: View? = layoutInflater.inflate(R.layout.actionbar_account, null)
+            return accountPhotoView
+        }
+
     @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+
         setContentView(R.layout.main_activity)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
 
@@ -61,28 +98,63 @@ class MainActivity : AppCompatActivity() {
             ).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0
         )
 
-        findViewById<Button>(R.id.process_incoming_parcels).setOnClickListener {
-            goToUrl(getBaseUrl() + PROCESS_INCOMING_ROUTE)
+        findViewById<CardView>(R.id.addNewItemsCard).setOnClickListener {
+            goToUrl(providesBaseUrl.getBaseUrl() + PROCESS_INCOMING_ROUTE)
         }
 
-        findViewById<Button>(R.id.manual_item_collection).setOnClickListener {
-            goToUrl(getBaseUrl() + COLLECTION_ROUTE)
+        findViewById<CardView>(R.id.manualCollectionCard).setOnClickListener {
+            goToUrl(providesBaseUrl.getBaseUrl() + COLLECTION_ROUTE)
         }
 
-        findViewById<Button>(R.id.view_activity).setOnClickListener {
-            goToUrl(getBaseUrl() + AUDITS_ROUTE)
+        findViewById<CardView>(R.id.finaliseAtHubCard).setOnClickListener {
+            goToUrl(providesBaseUrl.getBaseUrl() + MOVE_ITEMS_ROUTE + "?hub")
         }
 
-        findViewById<Button>(R.id.shelf_audit).setOnClickListener {
-            goToUrl(getBaseUrl() + SHELF_AUDIT_ROUTE)
+        model.usercode.observe(this, Observer { newUsercode ->
+            Log.i(TAG, "New usercode")
+            if (newUsercode != null) {
+                Toast.makeText(this, "Logged in as $newUsercode", Toast.LENGTH_SHORT).show()
+            }
+        })
+
+        model.photo.observe(this, { newPhoto ->
+            Log.i(TAG, "New photo")
+            if (newPhoto == null) {
+                findViewById<CardView>(R.id.profilePhotoView)?.visibility = GONE
+                return@observe
+            }
+            accountPhotoView?.findViewById<ImageView>(R.id.profilePhoto)?.apply {
+                Picasso.get().load(newPhoto).into(this)
+                val imageView = this
+                val popup = PopupMenu(this@MainActivity, imageView)
+                popup.setOnMenuItemClickListener {
+                    switchUser()
+                    true
+                }
+                popup.inflate(R.menu.profile)
+                this.setOnClickListener {
+                    imageView.showContextMenu()
+                    popup.show()
+                }
+                val cardView = accountPhotoView?.findViewById<CardView>(R.id.profilePhotoView)
+                cardView?.visibility = VISIBLE
+            }
+        })
+
+        if (sscPersistenceService.getSsc() != null) {
+            model.testSscRequest(providesBaseUrl.getBaseUrl(), sscPersistenceService.getSsc()!!)
         }
 
-        findViewById<Button>(R.id.rts).setOnClickListener {
-            handleRts()
-        }
-
-        findViewById<Button>(R.id.move_items).setOnClickListener {
-            handleMoveItems()
+        val actionBar = supportActionBar
+        if (actionBar != null) {
+            actionBar.displayOptions = ActionBar.DISPLAY_SHOW_CUSTOM or ActionBar.DISPLAY_SHOW_TITLE
+            accountPhotoView = layoutInflater.inflate(R.layout.actionbar_account, null)
+            val layoutParams: ActionBar.LayoutParams = ActionBar.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.END
+            )
+            actionBar.setCustomView(accountPhotoView, layoutParams)
         }
     }
 
@@ -96,31 +168,14 @@ class MainActivity : AppCompatActivity() {
             )
         ) { _, which ->
             when (which) {
-                0 -> goToUrl(getBaseUrl() + RTS_SPR_ROUTE)
-                1 -> goToUrl(getBaseUrl() + RTS_COURIER_ROUTE)
+                0 -> goToUrl(providesBaseUrl.getBaseUrl() + RTS_SPR_ROUTE)
+                1 -> goToUrl(providesBaseUrl.getBaseUrl() + RTS_COURIER_ROUTE)
             }
         }
         builder.setNegativeButton("Cancel") { _: DialogInterface, _: Int -> }
         builder.create().show()
     }
 
-    private fun handleMoveItems() {
-        val builder: AlertDialog.Builder = AlertDialog.Builder(this)
-        builder.setTitle("Which statement best describes what you want to do?")
-        builder.setItems(
-            arrayOf<CharSequence>(
-                "I am processing received items at a postal hub; I want to notify students",
-                "I am re-organising items, I don't want notifications"
-            )
-        ) { _, which ->
-            when (which) {
-                0 -> goToUrl(getBaseUrl() + MOVE_ITEMS_ROUTE + "?hub")
-                1 -> goToUrl(getBaseUrl() + MOVE_ITEMS_ROUTE)
-            }
-        }
-        builder.setNegativeButton("Cancel") { _: DialogInterface, _: Int -> }
-        builder.create().show()
-    }
 
     private fun goToUrl(uriString: String) {
         val intent = buildCustomTabsIntent()
@@ -137,11 +192,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun switchUser() {
+        sscPersistenceService.clearSsc()
+        model.clearUserDetails()
+
         val intent = buildCustomTabsIntent()
         val builder = Uri.Builder()
         builder.scheme("https").authority(SSO_PROD_AUTHORITY).appendPath("origin")
             .appendPath("logout")
-            .appendQueryParameter("target", getBaseUrl() + PROCESS_INCOMING_ROUTE)
+            .appendQueryParameter("target", providesBaseUrl.getBaseUrl() + "begin-app-link/logout")
         try {
             intent.launchUrl(
                 this,
@@ -155,7 +213,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         val inflater = menuInflater
         inflater.inflate(R.menu.toolbar, menu)
-        return true
+        return true // to show the menu
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -164,8 +222,35 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this, SettingsActivity::class.java))
                 true
             }
-            R.id.switchUserBtn -> {
-                switchUser()
+            R.id.cameraBtn -> {
+                if (sscPersistenceService.getSsc() == null) {
+                    val builder: AlertDialog.Builder = AlertDialog.Builder(this)
+                    builder.setTitle("This feature requires you to link your Warwick account to the app")
+                    builder.setMessage("The OCR component needs to be able to fetch a valid list of university IDs and rooms, using your access to the Postroom system.")
+                    builder.setPositiveButton("Link identity now") { _: DialogInterface, _: Int ->
+                        startActivity(Intent(this, SettingsActivity::class.java).putExtra("link", true))
+                    }
+                    builder.setNegativeButton("Cancel") { _: DialogInterface, _: Int -> }
+                    builder.create().show()
+                } else {
+                    startActivity(Intent(this, CameraActivity::class.java))
+                }
+                true
+            }
+            R.id.moveItemsMenuItem -> {
+                goToUrl(providesBaseUrl.getBaseUrl() + MOVE_ITEMS_ROUTE)
+                true
+            }
+            R.id.rtsMenuItem -> {
+                handleRts()
+                true
+            }
+            R.id.shelfAuditMenuItem -> {
+                goToUrl(providesBaseUrl.getBaseUrl() + SHELF_AUDIT_ROUTE)
+                true
+            }
+            R.id.viewRecentActivityMenuItem -> {
+                goToUrl(providesBaseUrl.getBaseUrl() + AUDITS_ROUTE)
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -173,7 +258,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun buildCustomTabsIntent(): CustomTabsIntent {
-        return CustomTabsIntent.Builder(customTabsSession)
+        val intent = CustomTabsIntent.Builder(customTabsSession)
             .setToolbarColor(
                 getColor(R.color.colorPrimaryDark)
             )
@@ -184,6 +269,12 @@ class MainActivity : AppCompatActivity() {
                 android.R.anim.slide_out_right
             )
             .build()
+
+        val headers = Bundle()
+        // hilarious abuse of HTTP but I have my reasons for doing this
+        headers.putString("Accept-Language", "POSTROOM")
+        intent.intent.putExtra(Browser.EXTRA_HEADERS, headers)
+        return intent
     }
 
 
@@ -209,48 +300,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val pm = applicationContext.packageManager
-        var packageToUse = "com.android.chrome"
 
-        // Use a representative URL to work out which packages are capable of opening a typical tab
-        val activityIntent =
-            Intent(Intent.ACTION_VIEW, Uri.parse("https://warwick.ac.uk"))
-
-        // Does the user have a default browser?
-        var defaultViewHandlerPackageName: String? = null
-        val defaultViewHandlerInfo = pm.resolveActivity(activityIntent, 0)
-        if (defaultViewHandlerInfo != null) {
-            defaultViewHandlerPackageName = defaultViewHandlerInfo.activityInfo.packageName
-        }
-
-        val resolvedActivityList =
-            pm.queryIntentActivities(activityIntent, 0)
-        val packagesSupportingCustomTabs: MutableList<String> =
-            ArrayList()
-        for (info in resolvedActivityList) {
-            val serviceIntent = Intent()
-            serviceIntent.action = CustomTabsService.ACTION_CUSTOM_TABS_CONNECTION
-            serviceIntent.setPackage(info.activityInfo.packageName)
-            // Check if this package also resolves the Custom Tabs service.
-            if (pm.resolveService(serviceIntent, 0) != null) { // Great, add it to the list
-                packagesSupportingCustomTabs.add(info.activityInfo.packageName)
-            }
-        }
-
-        if (packagesSupportingCustomTabs.isNotEmpty()) {
-            // prefer the user's default browser if it supports custom tabs
-            packageToUse =
-                if (packagesSupportingCustomTabs.contains(defaultViewHandlerPackageName)) {
-                    defaultViewHandlerPackageName!!
-                } else {
-                    // arbitrarily pick the first one
-                    packagesSupportingCustomTabs[0]
-                }
-        }
 
         CustomTabsClient.bindCustomTabsService(
             this,
-            packageToUse,
+            customTabsService.getPackageToUse(),
             tabsConnection as CustomTabsServiceConnection
         )
     }
@@ -288,7 +342,7 @@ class MainActivity : AppCompatActivity() {
     private fun openCollectionCustomTab(customTabIntent: CustomTabsIntent) {
         try {
             Log.i(TAG, "Opening intent from onResume")
-            val uri = Uri.parse(getBaseUrl() + COLLECTION_ROUTE + universityId)
+            val uri = Uri.parse(providesBaseUrl.getBaseUrl() + COLLECTION_ROUTE + universityId)
             universityId = null
             customTabIntent.launchUrl(
                 this@MainActivity,
@@ -325,9 +379,21 @@ class MainActivity : AppCompatActivity() {
         handleIntent(intent)
     }
 
+
     private fun handleIntent(intent: Intent) {
+        if (intent.data?.path == "/app-link/ssc" && intent.data?.getQueryParameter("value") != null) {
+            val ssc = intent.data?.getQueryParameter("value")
+            if (ssc == "logout") {
+                sscPersistenceService.clearSsc()
+                return
+            }
+            sscPersistenceService.putSsc(ssc!!)
+            model.testSscRequest(providesBaseUrl.getBaseUrl(), ssc)
+            return
+        }
+
         if (NfcAdapter.ACTION_TECH_DISCOVERED == intent.action) {
-            val detectedTag: Tag? = intent.getParcelableExtra<Tag>(NfcAdapter.EXTRA_TAG)
+            val detectedTag: Tag? = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
             if (detectedTag != null) {
                 val mfc = MifareClassic.get(detectedTag)
                 var data = ByteArray(0)
@@ -357,13 +423,6 @@ class MainActivity : AppCompatActivity() {
 
         }
     }
-
-    private fun getBaseUrl(): String =
-        getDefaultSharedPreferences(this).getString(
-            getString(R.string.instance_url_pref_id),
-            POSTROOM_BASE_URL_DEFAULT
-        )!!.replace("^(.*[^/])$".toRegex()) { it.groupValues[0].toString()+"/" }
-
 
     private fun readMifareData(data: ByteArray) {
         val uniId =
@@ -405,4 +464,5 @@ class MainActivity : AppCompatActivity() {
             "Title: $titleStr"
         )
     }
+
 }

@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Post room</string>
+    <string name="capture_button_alt">Capture</string>
+
     <string name="process_incoming_parcels">Process incoming items</string>
     <string name="manual_item_collection">Manual item collection</string>
     <string name="what_do_you_want_to_do">What do you want to do?</string>
@@ -16,11 +18,23 @@
     <string name="boxes_in_a_pile">Boxes in a pile</string>
     <string name="nfc_logo">NFC Logo</string>
     <string name="instance_url_pref_id">instance_url</string>
-    <string name="switch_user">Switch user</string>
+    <string name="switch_user">Logout</string>
     <string name="return_to_sender">Return to sender</string>
     <string name="i_am_a_courier_rts">I\'m a courier and am collecting items that have already been set-aside.</string>
     <string name="i_work_in_the_spr_rts">I work in the post room and need to move uncollected items onto an RTS shelf.</string>
+    <string name="camera">Camera</string>
     <string name="view_activity">View Activity</string>
     <string name="shelf_audit">Shelf Audit</string>
     <string name="move_items">Move items</string>
+    <string name="no_id">No ID</string>
+    <string name="dynamically_generated">Dynamically generated</string>
+    <string name="add_new_items_card_description">Process new items at sorting office prior to hub distribution.</string>
+    <string name="add_new_items_card_title">Add new items</string>
+    <string name="westwood_student_post_room_image_alt">Westwood Student Post room</string>
+    <string name="boxes_on_shelves_image_alt">Boxes on shelves</string>
+    <string name="finalise_items_at_hub_card_title">Finalise items at hub</string>
+    <string name="finalise_items_at_hub_card_description">Move items at hub onto shelf, informing recipient.</string>
+    <string name="driving_license_img_alt">Driving license</string>
+    <string name="manual_collection_card_title">Manual collection</string>
+    <string name="manual_collection_card_description">Collect items by name, university ID or room. Check recipient\'s ID.</string>
 </resources>
