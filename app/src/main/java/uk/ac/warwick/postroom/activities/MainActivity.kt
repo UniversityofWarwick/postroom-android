@@ -33,7 +33,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import uk.ac.warwick.postroom.R
 import uk.ac.warwick.postroom.services.CustomTabsService
 import uk.ac.warwick.postroom.services.ProvidesBaseUrl
-import uk.ac.warwick.postroom.services.ProvidesBaseUrlImpl
 import uk.ac.warwick.postroom.services.SscPersistenceService
 import uk.ac.warwick.postroom.vm.HomeViewModel
 import java.io.IOException
@@ -86,7 +85,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
 
-        setContentView(R.layout.main_activity)
+        setContentView(R.layout.activity_main)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
 
         mAdapter = NfcAdapter.getDefaultAdapter(this)

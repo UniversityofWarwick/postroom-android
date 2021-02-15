@@ -50,10 +50,10 @@ import uk.ac.warwick.postroom.OcrImageAnalyzer
 import uk.ac.warwick.postroom.R
 import uk.ac.warwick.postroom.activities.KEY_EVENT_ACTION
 import uk.ac.warwick.postroom.activities.KEY_EVENT_EXTRA
-import uk.ac.warwick.postroom.domain.BarcodeFormat
-import uk.ac.warwick.postroom.domain.RecognisedBarcode
 import uk.ac.warwick.postroom.services.CourierMatchService
+import uk.ac.warwick.postroom.services.ProvidesBaseUrl
 import uk.ac.warwick.postroom.services.RecipientDataService
+import uk.ac.warwick.postroom.services.SscPersistenceService
 import uk.ac.warwick.postroom.utils.simulateClick
 import uk.ac.warwick.postroom.vm.CameraViewModel
 import java.io.File
@@ -80,6 +80,12 @@ class CameraFragment : Fragment() {
 
     @Inject
     lateinit var recipientDataService: RecipientDataService
+
+    @Inject
+    lateinit var sscPersistenceService: SscPersistenceService
+
+    @Inject
+    lateinit var baseUrl: ProvidesBaseUrl
 
     @Inject
     lateinit var courierMatchService: CourierMatchService
@@ -249,9 +255,7 @@ class CameraFragment : Fragment() {
         })
 
         model.uniIdBoundingBox.observe(viewLifecycleOwner, { newRect ->
-            Log.i(TAG, "Got new rect $canvas")
             if (newRect != null && canvas) {
-                Log.i(TAG, "gonna draw")
                 val canvas = surfaceView.holder.lockCanvas()
                 val rect: RectF
                 if (isPortraitMode()) {
@@ -517,7 +521,11 @@ class CameraFragment : Fragment() {
                 .addSizes(nl.dionsegijn.konfetti.models.Size(12))
                 .setPosition(-50f, confetti.width + 50f, -50f, -50f)
                 .streamFor(900, 500L)
-            Toast.makeText(context, "This button could do something", Toast.LENGTH_SHORT).show()
+            val addPhotoBottomDialogFragment = AddPhotoBottomDialogFragment.newInstance(sscPersistenceService, baseUrl)
+            addPhotoBottomDialogFragment.show(
+                parentFragmentManager,
+                "add_photo_dialog_fragment"
+            )
         }
 
     }

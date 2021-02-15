@@ -37,4 +37,5 @@
     <string name="driving_license_img_alt">Driving license</string>
     <string name="manual_collection_card_title">Manual collection</string>
     <string name="manual_collection_card_description">Collect items by name, university ID or room. Check recipient\'s ID.</string>
+    <string name="title_activity_add_item">Save item to system</string>
 </resources>
