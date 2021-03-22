@@ -1,5 +1,6 @@
 package uk.ac.warwick.postroom.adapter
 
+import android.app.Activity
 import android.content.Context
 import android.util.Log
 import android.view.LayoutInflater
@@ -7,11 +8,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Filter
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.annotation.LayoutRes
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.serialization.kotlinxDeserializerOf
 import kotlinx.serialization.json.Json
+import uk.ac.warwick.postroom.R
 import uk.ac.warwick.postroom.activities.TAG
 import uk.ac.warwick.postroom.domain.AutocompleteResponse
 import uk.ac.warwick.postroom.domain.Recipient
@@ -21,18 +24,17 @@ import uk.ac.warwick.postroom.services.SscPersistenceService
 
 
 class RecipientAdapter(
-    context: Context,
+    private val activity: Activity,
     @LayoutRes private val layoutResource: Int,
     val providesBaseUrl: ProvidesBaseUrl,
     val sscPersistenceService: SscPersistenceService,
+    private val progressIndicator: ProgressBar,
     private val recipients: MutableList<Recipient> = mutableListOf()
 ) : ArrayAdapter<Recipient>(
-    context,
+    activity,
     layoutResource,
     recipients
 ) {
-
-
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         return createViewFromResource(position, convertView, parent)
@@ -63,6 +65,9 @@ class RecipientAdapter(
                 val results = FilterResults()
                 if (constraint != null) {
                     Log.i(TAG, "Got new search term of $constraint")
+                    activity.runOnUiThread {
+                        progressIndicator.visibility = View.VISIBLE
+                    }
                     val result = Fuel.get(
                         "${providesBaseUrl.getBaseUrl()}admin/query",
                         listOf("q" to constraint.toString().toUpperCase())
@@ -73,19 +78,23 @@ class RecipientAdapter(
                         }))
 
                     val toProcess = result.third
+                    activity.runOnUiThread {
+                        progressIndicator.visibility = View.GONE
+                    }
                     if (toProcess.component2() != null) {
                         Log.e(
                             TAG,
                             "HTTP request for recipient search was a failure",
                             toProcess.component2()!!.exception
                         )
-                    }
-                    recipients.clear()
-                    recipients.addAll(
-                        toProcess.component1()?.data?.toMutableList()?.take(10) ?: mutableListOf())
-                    results.values = recipients
-                    results.count = recipients.size
+                    } else {
+                        recipients.clear()
+                        recipients.addAll(
+                            toProcess.component1()?.data?.toMutableList()?.take(10) ?: mutableListOf())
+                        results.values = recipients
+                        results.count = recipients.size
 
+                    }
                 }
                 return results
             }
