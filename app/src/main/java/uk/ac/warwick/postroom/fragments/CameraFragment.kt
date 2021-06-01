@@ -17,10 +17,8 @@
 package uk.ac.warwick.postroom.fragments
 
 import android.annotation.SuppressLint
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.app.AlertDialog
+import android.content.*
 import android.content.res.Configuration
 import android.graphics.*
 import android.hardware.display.DisplayManager
@@ -50,6 +48,7 @@ import uk.ac.warwick.postroom.OcrImageAnalyzer
 import uk.ac.warwick.postroom.R
 import uk.ac.warwick.postroom.activities.KEY_EVENT_ACTION
 import uk.ac.warwick.postroom.activities.KEY_EVENT_EXTRA
+import uk.ac.warwick.postroom.activities.SettingsActivity
 import uk.ac.warwick.postroom.services.CourierMatchService
 import uk.ac.warwick.postroom.services.ProvidesBaseUrl
 import uk.ac.warwick.postroom.services.RecipientDataService
@@ -127,7 +126,7 @@ class CameraFragment : Fragment() {
         override fun onDisplayAdded(displayId: Int) = Unit
         override fun onDisplayRemoved(displayId: Int) = Unit
         override fun onDisplayChanged(displayId: Int) = view?.let { view ->
-            if (displayId == this@CameraFragment.displayId) {
+            if (displayId == this@CameraFragment.displayId && view.display != null) {
                 Log.d(TAG, "Rotation changed: ${view.display.rotation}")
 
                 imageCapture?.targetRotation = view.display.rotation
@@ -163,6 +162,24 @@ class CameraFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        model.initialFetchError.observe(viewLifecycleOwner, { newException ->
+            val builder: AlertDialog.Builder = AlertDialog.Builder(this.requireContext())
+            builder.setTitle("Failed to retrieve data from Postroom API")
+            builder.setMessage("Your session might have expired, please link your identity again.")
+            builder.setPositiveButton("Link identity now") { _: DialogInterface, _: Int ->
+                ContextCompat.startActivity(this.requireContext(),
+                    Intent(
+                        this.requireContext(),
+                        SettingsActivity::class.java
+                    ).putExtra("link", true),
+                    null
+                )
+            }
+            builder.setNegativeButton("Back to home") { _: DialogInterface, _: Int ->
+                this.requireActivity().onBackPressed()
+            }
+            builder.create().show()
+        })
         model.cacheData(recipientDataService, courierMatchService)
         return inflater.inflate(R.layout.fragment_camera, container, false)
     }
@@ -171,11 +188,9 @@ class CameraFragment : Fragment() {
 
     private var canvas: Boolean = false
 
-
     @SuppressLint("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
 
         model.uniId.observe(viewLifecycleOwner, { newUniId ->
             // Update the UI, in this case, a TextView.
@@ -310,6 +325,7 @@ class CameraFragment : Fragment() {
 
             // Keep track of the display in which this view is attached
             displayId = viewFinder.display.displayId
+            viewFinder.preferredImplementationMode = PreviewView.ImplementationMode.TEXTURE_VIEW
 
             // Build UI controls
             updateCameraUi()
@@ -345,19 +361,19 @@ class CameraFragment : Fragment() {
     private fun evaluateCurrentStatus() {
         if (statusIndicator != null) {
             if (model.recipientGuesses.value?.size == 2 && model.recipientGuesses.value!!.distinctBy { it.id }.size == 1) {
-                statusIndicator.text = "\uD83D\uDE03"
+                checkKnownRecipient.setImageResource(R.drawable.ic_baseline_check_circle_24)
             } else if (model.recipientGuesses.value?.size == 2 && model.recipientGuesses.value!!.distinctBy { it.id }.size == 2) {
-                statusIndicator.text = "‼️"
+                checkKnownRecipient.setImageResource(R.drawable.ic_baseline_error_24)
             } else if (model.recipientGuesses.value?.size == 1) {
-                statusIndicator.text = "\uD83D\uDE42"
+                checkKnownRecipient.setImageResource(R.drawable.ic_baseline_check_circle_white_24)
             } else {
-                statusIndicator.text = "⏳"
+                checkKnownRecipient.setImageResource(R.drawable.ic_baseline_not_interested_24)
             }
 
             if (model.courierGuess.value != null) {
-                statusIndicator.text = (statusIndicator.text.toString() + "✅")
+                checkKnownCourier.setImageResource(R.drawable.ic_baseline_check_circle_24)
             } else {
-                statusIndicator.text = (statusIndicator.text.toString() + "❌")
+                checkKnownCourier.setImageResource(R.drawable.ic_baseline_not_interested_24)
             }
 
             if (barcodeCount != null) {
@@ -497,37 +513,62 @@ class CameraFragment : Fragment() {
         // Listener for button used to capture photo
         controls.findViewById<ImageButton>(R.id.camera_capture_button).setOnClickListener {
             view?.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            val confetti = controls.findViewById<KonfettiView>(R.id.viewKonfetti)
-            // ["#1e90ff","#6b8e23","#ffd700","#ffc0cb","#6a5acd","#add8e6","#ee82ee","#98fb98","#4682b4","#f4a460","#d2691e","#dc143c"]
-            confetti.build()
-                .addColors(
-                    Color.parseColor("#1e90ff"),
-                    Color.parseColor("#6b8e23"),
-                    Color.parseColor("#ffd700"),
-                    Color.parseColor("#ffc0cb"),
-                    Color.parseColor("#6a5acd"),
-                    Color.parseColor("#add8e6"),
-                    Color.parseColor("#ee82ee"),
-                    Color.parseColor("#98fb98"),
-                    Color.parseColor("#4682b4"),
-                    Color.parseColor("#f4a460"),
-                    Color.parseColor("#d2691e"),
-                    Color.parseColor("#dc143c")
+            val addPhotoBottomDialogFragment: AddPhotoBottomDialogFragment = AddPhotoBottomDialogFragment.newInstance(sscPersistenceService, baseUrl, model)
+
+            val vfChild = viewFinder.getChildAt(0)
+            if (vfChild is TextureView && checkPrerequisitesForAddDialog()) {
+                preview?.setSurfaceProvider(null)
+                val bitmap = vfChild.getBitmap(viewFinder.width, viewFinder.height)
+                addPhotoBottomDialogFragment.show(
+                    parentFragmentManager,
+                    "add_photo_dialog_fragment"
                 )
-                .setDirection(0.0, 359.0)
-                .setSpeed(5f, 5f)
-                .setTimeToLive(5000L)
-                .addShapes(Shape.Square, Shape.Circle)
-                .addSizes(nl.dionsegijn.konfetti.models.Size(12))
-                .setPosition(-50f, confetti.width + 50f, -50f, -50f)
-                .streamFor(900, 500L)
-            val addPhotoBottomDialogFragment = AddPhotoBottomDialogFragment.newInstance(sscPersistenceService, baseUrl)
-            addPhotoBottomDialogFragment.show(
-                parentFragmentManager,
-                "add_photo_dialog_fragment"
-            )
+            }
+
+
+            addPhotoBottomDialogFragment.setOnDismissCallback {
+                preview?.setSurfaceProvider(viewFinder.createSurfaceProvider(camera?.cameraInfo))
+            }
+            addPhotoBottomDialogFragment.setOnSuccessCallback {
+                val confetti = controls.findViewById<KonfettiView>(R.id.viewKonfetti)
+                confetti.build()
+                    .addColors(
+                        Color.parseColor("#1e90ff"),
+                        Color.parseColor("#6b8e23"),
+                        Color.parseColor("#ffd700"),
+                        Color.parseColor("#ffc0cb"),
+                        Color.parseColor("#6a5acd"),
+                        Color.parseColor("#add8e6"),
+                        Color.parseColor("#ee82ee"),
+                        Color.parseColor("#98fb98"),
+                        Color.parseColor("#4682b4"),
+                        Color.parseColor("#f4a460"),
+                        Color.parseColor("#d2691e"),
+                        Color.parseColor("#dc143c")
+                    )
+                    .setDirection(0.0, 359.0)
+                    .setSpeed(5f, 5f)
+                    .setTimeToLive(5000L)
+                    .addShapes(Shape.Square, Shape.Circle)
+                    .addSizes(nl.dionsegijn.konfetti.models.Size(12))
+                    .setPosition(-50f, confetti.width + 50f, -50f, -50f)
+                    .streamFor(900, 500L)
+            }
+
         }
 
+    }
+
+    private fun checkPrerequisitesForAddDialog(): Boolean {
+        val ready = model.couriers.value?.any() == true && model.qrId.value?.isNotEmpty() == true
+        if (!ready) {
+            val builder: AlertDialog.Builder = AlertDialog.Builder(this.requireContext())
+            builder.setTitle("Not ready to add item yet")
+            builder.setMessage("You need to have scanned a QR barcode and the phone needs to have fetched a list of couriers from the remote server first.")
+            builder.setNegativeButton("Close"){ _, _ -> }
+            builder.show()
+        }
+        return ready
     }
 
 

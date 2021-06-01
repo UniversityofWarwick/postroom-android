@@ -1,6 +1,6 @@
 package uk.ac.warwick.postroom.services
 
 interface RecipientDataService {
-    fun getUniversityIdToUuidMap(callback: (Map<String, String>) -> Unit)
-    fun getRoomToUuidMap(callback: (Map<String, String>) -> Unit)
+    suspend fun getUniversityIdToUuidMap(): Result<Map<String, String>>
+    suspend fun getRoomToUuidMap(): Result<Map<String, String>>
 }

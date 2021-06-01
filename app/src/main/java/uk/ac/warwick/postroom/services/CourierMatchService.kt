@@ -6,7 +6,7 @@ import uk.ac.warwick.postroom.domain.RecognisedBarcode
 
 interface CourierMatchService {
     fun guessFromBarcode(patterns: List<CourierMatchPattern>, barcode: RecognisedBarcode): CourierMatchPattern?
-    fun fetchAllCouriers(callback: (List<Courier>) -> Unit)
+    suspend fun fetchAllCouriers(): Result<List<Courier>>
     fun fetchAllCourierPatterns(callback: (List<CourierMatchPattern>) -> Unit)
     fun excludeRejects(courierPatterns: List<CourierMatchPattern>, barcodes: Set<RecognisedBarcode>): Set<RecognisedBarcode>
 }

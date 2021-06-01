@@ -1,10 +1,15 @@
 package uk.ac.warwick.postroom.vm
 
+import android.app.AlertDialog
+import android.content.DialogInterface
+import android.content.Intent
 import android.graphics.Rect
+import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import uk.ac.warwick.postroom.activities.SettingsActivity
 import uk.ac.warwick.postroom.domain.*
 import uk.ac.warwick.postroom.services.CourierMatchService
 import uk.ac.warwick.postroom.services.RecipientDataService
@@ -67,10 +72,33 @@ class CameraViewModel : ViewModel() {
         MutableLiveData<Map<String, String>>()
     }
 
+    val couriers: MutableLiveData<List<Courier>> by lazy {
+        MutableLiveData<List<Courier>>()
+    }
+
+    val initialFetchError: MutableLiveData<Throwable> by lazy {
+        MutableLiveData<Throwable>()
+    }
+
     fun cacheData(recipientDataService: RecipientDataService, courierMatchService: CourierMatchService) {
         viewModelScope.launch {
-            recipientDataService.getUniversityIdToUuidMap { uniIds.postValue(it) }
-            recipientDataService.getRoomToUuidMap { rooms.postValue(it) }
+            recipientDataService.getUniversityIdToUuidMap().also {
+                if (it.isSuccess) {
+                    uniIds.postValue(it.getOrThrow())
+                } else {
+                    initialFetchError.postValue(it.exceptionOrNull()!!)
+                }
+            }
+            recipientDataService.getRoomToUuidMap().also {
+                if (it.isSuccess) {
+                    rooms.postValue(it.getOrThrow())
+                }
+            }
+            courierMatchService.fetchAllCouriers().also {
+                if (it.isSuccess) {
+                    couriers.postValue(it.getOrThrow())
+                }
+            }
             courierMatchService.fetchAllCourierPatterns { courierPatterns.postValue(it) }
         }
     }

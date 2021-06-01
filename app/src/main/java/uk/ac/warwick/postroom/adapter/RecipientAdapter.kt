@@ -36,6 +36,10 @@ class RecipientAdapter(
     recipients
 ) {
 
+    fun resolveIdToRecipient(id: Int): Recipient {
+        return recipients[id];
+    }
+
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         return createViewFromResource(position, convertView, parent)
     }
@@ -93,7 +97,6 @@ class RecipientAdapter(
                             toProcess.component1()?.data?.toMutableList()?.take(10) ?: mutableListOf())
                         results.values = recipients
                         results.count = recipients.size
-
                     }
                 }
                 return results

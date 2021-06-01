@@ -8,19 +8,22 @@ apply plugin: 'dagger.hilt.android.plugin'
 apply plugin: 'kotlinx-serialization'
 
 def keystorePropertiesFile = rootProject.file("keystore.properties");
-def keystoreProperties = new Properties()
-keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
 android {
     ndkVersion "21.3.6528147"
-    signingConfigs {
-        debug {
-            storeFile file(keystoreProperties['storeLocation'])
-            keyAlias 'upload'
-            storePassword keystoreProperties['storePassword']
-            keyPassword keystoreProperties['keyPassword']
+    if (keystorePropertiesFile.exists()) {
+        def keystoreProperties = new Properties()
+        keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+        signingConfigs {
+            debug {
+                storeFile file(keystoreProperties['storeLocation'])
+                keyAlias 'upload'
+                storePassword keystoreProperties['storePassword']
+                keyPassword keystoreProperties['keyPassword']
+            }
         }
     }
+
     compileSdkVersion 29
 
     defaultConfig {
@@ -40,6 +43,7 @@ android {
     // For Kotlin projects
     kotlinOptions {
         jvmTarget = "1.8"
+        freeCompilerArgs = ["-Xallow-result-return-type"]
     }
 
 
@@ -51,6 +55,7 @@ android {
     }
     buildFeatures {
         viewBinding true
+        dataBinding true
     }
 
     compileOptions {
@@ -78,6 +83,7 @@ dependencies {
     kapt "com.google.dagger:hilt-android-compiler:2.28-alpha"
     implementation "com.github.kittinunf.fuel:fuel:2.3.1"
     implementation 'com.github.kittinunf.fuel:fuel-kotlinx-serialization:2.3.1'
+    implementation 'com.github.kittinunf.fuel:fuel-coroutines:2.3.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.9'
     implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.0.0'
     implementation 'nl.dionsegijn:konfetti:1.2.5'
