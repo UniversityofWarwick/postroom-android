@@ -3,6 +3,7 @@ package uk.ac.warwick.postroom.vm
 import android.app.AlertDialog
 import android.content.DialogInterface
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Rect
 import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.MutableLiveData
@@ -34,6 +35,10 @@ class AddItemViewModel : ViewModel() {
 
     val couriers: MutableLiveData<List<Courier>> by lazy {
         MutableLiveData<List<Courier>>()
+    }
+
+    val bitmap: MutableLiveData<Bitmap> by lazy {
+        MutableLiveData<Bitmap>()
     }
 
 }

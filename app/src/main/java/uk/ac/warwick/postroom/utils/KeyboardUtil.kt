@@ -1,6 +1,7 @@
 package uk.ac.warwick.postroom.utils
 
 import android.app.Activity
+import android.content.res.Configuration
 import android.graphics.Rect
 import android.os.Build
 import android.view.View

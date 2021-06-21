@@ -7,3 +7,8 @@ fun Request.withSscAuth(ssc: String): Request {
     header("Cookie", "$SSC_NAME=$ssc")
     return this
 }
+
+fun Request.withSscAuthAndCsrfToken(ssc: String, csrfToken: String): Request {
+    header("Cookie", "$SSC_NAME=$ssc; XSRF-TOKEN=$csrfToken")
+    return this
+}

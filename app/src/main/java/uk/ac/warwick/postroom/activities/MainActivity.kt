@@ -303,7 +303,7 @@ class MainActivity : AppCompatActivity() {
 
         CustomTabsClient.bindCustomTabsService(
             this,
-            customTabsService.getPackageToUse(),
+            customTabsService.getPackageToUse(preferChrome = false),
             tabsConnection as CustomTabsServiceConnection
         )
     }

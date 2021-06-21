@@ -49,10 +49,8 @@ import uk.ac.warwick.postroom.R
 import uk.ac.warwick.postroom.activities.KEY_EVENT_ACTION
 import uk.ac.warwick.postroom.activities.KEY_EVENT_EXTRA
 import uk.ac.warwick.postroom.activities.SettingsActivity
-import uk.ac.warwick.postroom.services.CourierMatchService
-import uk.ac.warwick.postroom.services.ProvidesBaseUrl
-import uk.ac.warwick.postroom.services.RecipientDataService
-import uk.ac.warwick.postroom.services.SscPersistenceService
+import uk.ac.warwick.postroom.domain.RecognisedBarcode
+import uk.ac.warwick.postroom.services.*
 import uk.ac.warwick.postroom.utils.simulateClick
 import uk.ac.warwick.postroom.vm.CameraViewModel
 import java.io.File
@@ -88,6 +86,9 @@ class CameraFragment : Fragment() {
 
     @Inject
     lateinit var courierMatchService: CourierMatchService
+
+    @Inject
+    lateinit var itemService: ItemService
 
     private var displayId: Int = -1
     private var preview: Preview? = null
@@ -195,7 +196,7 @@ class CameraFragment : Fragment() {
         model.uniId.observe(viewLifecycleOwner, { newUniId ->
             // Update the UI, in this case, a TextView.
             if (uniIdLbl != null && uniIdLbl?.text != newUniId) {
-                uniIdLbl.text = newUniId
+                uniIdLbl.text = newUniId ?: resources.getText(R.string.no_id)
             }
         })
 
@@ -210,11 +211,11 @@ class CameraFragment : Fragment() {
         model.room.observe(viewLifecycleOwner, { newRoom ->
             // Update the UI, in this case, a TextView.
             if (detectedRoomLbl != null && detectedRoomLbl?.text != newRoom) {
-                detectedRoomLbl.text = newRoom
+                detectedRoomLbl.text = newRoom ?: resources.getText(R.string.no_room)
             }
         })
 
-        model.barcodes.observe(viewLifecycleOwner, Observer<Int> { num ->
+        model.barcodes.observe(viewLifecycleOwner, Observer { num ->
             if (barcodeCount != null) {
                 barcodeCount.text = "$num barcode${if (num != 1) "s" else ""} in shot"
             }
@@ -223,28 +224,7 @@ class CameraFragment : Fragment() {
         model.allCollectedBarcodes.observe(
             viewLifecycleOwner,
             { barcodes ->
-                val courierGuess = barcodes.map {
-                    it to courierMatchService.guessFromBarcode(
-                        model.courierPatterns.value ?: emptyList(),
-                        it
-                    )
-                }.firstOrNull { it.second != null }
-                if (courier != null) {
-                    courier.text = "${courierGuess?.second?.courier?.name ?: "No courier guess"}"
-                }
-                model.courierGuess.postValue(courierGuess?.second?.courier)
-                val bestBarcode = courierGuess?.first ?: courierMatchService.excludeRejects(
-                    model.courierPatterns.value ?: emptyList(), barcodes
-                ).firstOrNull()
-
-                if (bestBarcode != null) {
-                    model.bestBarcode.postValue(bestBarcode)
-                }
-
-                if (trackingLbl != null && bestBarcode != null && trackingLbl?.text != bestBarcode.barcode) {
-                    trackingLbl.text = "Best barcode: " + bestBarcode.barcode
-                }
-                evaluateCurrentStatus()
+                handleBarcodeSet(barcodes)
             })
 
         model.uniIds.observe(viewLifecycleOwner, { uniIds ->
@@ -264,7 +244,7 @@ class CameraFragment : Fragment() {
         model.qrId.observe(viewLifecycleOwner, { newQrId ->
             // Update the UI, in this case, a TextView.
             if (qrId != null && qrId?.text != newQrId) {
-                qrId.text = newQrId
+                qrId.text = newQrId ?: "No QR"
                 view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             }
         })
@@ -300,7 +280,6 @@ class CameraFragment : Fragment() {
                 val canvas = surfaceView.holder.lockCanvas()
                 canvas.drawColor(0, PorterDuff.Mode.CLEAR)
                 surfaceView.holder.unlockCanvasAndPost(canvas)
-
             }
         })
 
@@ -355,7 +334,51 @@ class CameraFragment : Fragment() {
                 }
 
             })
+
+            bottomStatusBar.setOnClickListener {
+                val builder: AlertDialog.Builder = AlertDialog.Builder(this.requireContext())
+                builder.setTitle("Do you want to reset?")
+                builder.setMessage("Captured QR code, barcodes, courier guess, room number and university ID will be forgotten about.")
+                builder.setNegativeButton("Close"){ _, _ -> }
+                builder.setPositiveButton("Confirm") { _, _ -> doReset() }
+                builder.show()
+            }
         }
+    }
+
+    private fun doReset() {
+        model.recipientGuesses.postValue(emptySet())
+        model.courierGuess.postValue(null)
+        model.uniId.postValue(null)
+        model.room.postValue(null)
+        model.qrId.postValue(null)
+        model.barcodes.postValue(0)
+        model.allCollectedBarcodes.postValue(emptySet())
+    }
+
+    private fun handleBarcodeSet(barcodes: Set<RecognisedBarcode>) {
+        val courierGuess = barcodes.map {
+            it to courierMatchService.guessFromBarcode(
+                model.courierPatterns.value ?: emptyList(),
+                it
+            )
+        }.firstOrNull { it.second != null }
+        if (courier != null) {
+            courier.text = "${courierGuess?.second?.courier?.name ?: "No courier guess"}"
+        }
+        model.courierGuess.postValue(courierGuess?.second?.courier)
+        val bestBarcode = courierGuess?.first ?: courierMatchService.excludeRejects(
+            model.courierPatterns.value ?: emptyList(), barcodes
+        ).firstOrNull()
+
+        if (bestBarcode != null) {
+            model.bestBarcode.postValue(bestBarcode)
+        }
+
+        if (trackingLbl != null && bestBarcode != null && trackingLbl?.text != bestBarcode.barcode) {
+            trackingLbl.text = "Best barcode: " + bestBarcode.barcode
+        }
+        evaluateCurrentStatus()
     }
 
     private fun evaluateCurrentStatus() {
@@ -442,12 +465,12 @@ class CameraFragment : Fragment() {
                 .setTargetRotation(rotation)
                 .build()
 
-            val imageAnalysis1 = ImageAnalysis.Builder()
+            imageAnalyzer = ImageAnalysis.Builder()
                 .setTargetResolution(Size(1280, 720))
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
 
-            imageAnalysis1.setAnalyzer(executor1, OcrImageAnalyzer(requireContext(), model))
+            imageAnalyzer!!.setAnalyzer(executor1, OcrImageAnalyzer(requireContext(), model))
 
             // ImageCapture
             imageCapture = ImageCapture.Builder()
@@ -468,7 +491,7 @@ class CameraFragment : Fragment() {
                 // A variable number of use-cases can be passed here -
                 // camera provides access to CameraControl & CameraInfo
                 camera = cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageCapture, imageAnalysis1
+                    this, cameraSelector, preview, imageCapture, imageAnalyzer
                 )
                 // Attach the viewfinder's surface provider to preview use case
                 preview?.setSurfaceProvider(viewFinder.createSurfaceProvider(camera?.cameraInfo))
@@ -513,12 +536,14 @@ class CameraFragment : Fragment() {
         // Listener for button used to capture photo
         controls.findViewById<ImageButton>(R.id.camera_capture_button).setOnClickListener {
             view?.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            val addPhotoBottomDialogFragment: AddPhotoBottomDialogFragment = AddPhotoBottomDialogFragment.newInstance(sscPersistenceService, baseUrl, model)
+            val addPhotoBottomDialogFragment: AddPhotoBottomDialogFragment = AddPhotoBottomDialogFragment.newInstance(sscPersistenceService, baseUrl, model, recipientDataService, itemService)
 
             val vfChild = viewFinder.getChildAt(0)
             if (vfChild is TextureView && checkPrerequisitesForAddDialog()) {
                 preview?.setSurfaceProvider(null)
+                imageAnalyzer?.clearAnalyzer()
                 val bitmap = vfChild.getBitmap(viewFinder.width, viewFinder.height)
+                addPhotoBottomDialogFragment.setBitmap(bitmap)
                 addPhotoBottomDialogFragment.show(
                     parentFragmentManager,
                     "add_photo_dialog_fragment"
@@ -528,8 +553,11 @@ class CameraFragment : Fragment() {
 
             addPhotoBottomDialogFragment.setOnDismissCallback {
                 preview?.setSurfaceProvider(viewFinder.createSurfaceProvider(camera?.cameraInfo))
+                imageAnalyzer!!.setAnalyzer(executor1, OcrImageAnalyzer(requireContext(), model))
             }
-            addPhotoBottomDialogFragment.setOnSuccessCallback {
+            addPhotoBottomDialogFragment.setOnSuccessCallback { item ->
+                doReset()
+
                 val confetti = controls.findViewById<KonfettiView>(R.id.viewKonfetti)
                 confetti.build()
                     .addColors(

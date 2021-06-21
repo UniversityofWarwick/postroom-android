@@ -17,12 +17,12 @@ enum class RecipientType {
 @Serializable
 data class Recipient(
     var id: String? = null,
-    var universityId: String,
     var source: RecipientSource,
     var type: RecipientType,
-    var room: String? = null,
     var kineticRoom: String? = null,
     var kineticFloor: Int? = null,
+    var room: String? = null,
+    var universityId: String,
     var firstName: String,
     var middleName: String? = null,
     var lastName: String,
