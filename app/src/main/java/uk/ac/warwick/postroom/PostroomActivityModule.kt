@@ -30,6 +30,11 @@ abstract class PostroomActivityModule {
     ): CourierMatchService
 
     @Binds
+    abstract fun bindItemService(
+        itemService: ItemServiceImpl
+    ): ItemService
+
+    @Binds
     abstract fun bindSscPersistenceService(
         sscPersistenceServiceImpl: SscPersistenceServiceImpl
     ): SscPersistenceService

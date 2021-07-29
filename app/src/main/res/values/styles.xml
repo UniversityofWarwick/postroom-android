@@ -8,10 +8,51 @@
         <item name="android:actionOverflowButtonStyle">@style/postroomOverflow</item>
     </style>
 
+    <style name="AppTheme.Fullscreen" parent="AppTheme">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowSoftInputMode">adjustResize</item>
+    </style>
+
+    <style name="Postroom.DialogStyle" parent="Widget.MaterialComponents.BottomSheet.Modal">
+
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowSoftInputMode">adjustResize</item>
+    </style>
+
     <style name="Postroom.Button.Circle" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+
+    <style name="ThemeOverlay.App.Button" parent="">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorOnPrimary">#FFE0B2</item>
+    </style>
+
+    <style name="Postroom.OutlinedBox.ExposedDropdownMenu" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+        <item name="boxStrokeColor">@color/colorPrimary</item>
+        <item name="hintTextColor">@color/colorPrimary</item>
+        <item name="endIconTint">@color/colorPrimary</item>
+        <item name="boxStrokeWidth">2dp</item>
+    </style>
+
+    <style name="Postroom.OutlinedBox.ExposedDropdownMenu.NoArrow">
+        <item name="materialThemeOverlay">
+            @style/ThemeOverlay.MaterialComponents.AutoCompleteTextView.OutlinedBox
+        </item>
+        <item name="endIconMode">none</item>
+    </style>
+
+    <style name="Postroom.OutlinedBox" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/colorPrimary</item>
+        <item name="hintTextColor">@color/colorPrimary</item>
+        <item name="boxStrokeWidth">2dp</item>
+    </style>
+
 
     <style name="roundedImageView" parent="">
         <item name="cornerFamily">rounded</item>

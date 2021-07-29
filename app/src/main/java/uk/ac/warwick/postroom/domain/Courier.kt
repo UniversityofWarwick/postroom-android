@@ -17,5 +17,7 @@ data class Courier(
     val createdAt: OffsetDateTime? = null,
 
     val logoUrl: String
-)
+) {
+    override fun toString(): String = name
+}
 

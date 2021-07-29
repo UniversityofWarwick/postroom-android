@@ -75,7 +75,7 @@ class SettingsActivity : AppCompatActivity() {
 
         CustomTabsClient.bindCustomTabsService(
             this,
-            customTabsService.getPackageToUse(),
+            customTabsService.getPackageToUse(preferChrome = true),
             tabsConnection as CustomTabsServiceConnection
         )
     }

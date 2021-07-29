@@ -59,7 +59,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="14dp"
         android:layout_marginTop="10dp"
-        android:text="No room"
+        android:text="@string/no_room"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/uniIdLbl" />
 
@@ -128,5 +128,54 @@
         android:id="@+id/viewKonfetti"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
+    <RelativeLayout
+        android:id="@+id/bottomStatusBar"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:background="@color/colorAccent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <TextView
+            android:id="@+id/textKnownRecipient"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="24dp"
+            android:text="Known recipient?"
+            android:textColor="#FFFFFF" />
+
+        <ImageView
+            android:id="@+id/checkKnownRecipient"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="6dp"
+            android:layout_toEndOf="@+id/textKnownRecipient"
+            app:srcCompat="@drawable/ic_baseline_check_circle_24" />
+
+        <TextView
+            android:id="@+id/textCourier"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="24dp"
+            android:layout_toEndOf="@+id/checkKnownRecipient"
+            android:text="Guessed courier?"
+            android:textColor="#FFFFFF" />
+
+        <ImageView
+            android:id="@+id/checkKnownCourier"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="6dp"
+            android:layout_toEndOf="@+id/textCourier"
+            app:srcCompat="@drawable/ic_baseline_check_circle_24" />
+
+
+    </RelativeLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

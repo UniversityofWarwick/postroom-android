@@ -5,7 +5,7 @@
     android:id="@+id/container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity" >
+    tools:context=".activities.MainActivity" >
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -234,18 +234,18 @@
             app:layout_constraintBottom_toBottomOf="parent">
 
             <ImageView
-                android:id="@+id/nfc_logo"
+                android:id="@+id/nfcLogo"
                 android:layout_width="47dp"
                 android:layout_height="48dp"
                 android:layout_marginStart="8dp"
                 android:contentDescription="@string/nfc_logo"
-                app:layout_constraintBottom_toBottomOf="@+id/nfc_explainer"
+                app:layout_constraintBottom_toBottomOf="@+id/nfcExplainerText"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/nfc_explainer"
+                app:layout_constraintTop_toTopOf="@+id/nfcExplainerText"
                 app:srcCompat="@drawable/ic_baseline_nfc_24" />
 
             <TextView
-                android:id="@+id/nfc_explainer"
+                android:id="@+id/nfcExplainerText"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
@@ -257,7 +257,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
 
                 app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toEndOf="@+id/nfc_logo" />
+                app:layout_constraintStart_toEndOf="@+id/nfcLogo" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

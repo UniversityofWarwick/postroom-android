@@ -13,7 +13,7 @@ class CustomTabsServiceImpl @Inject constructor(
     @ApplicationContext val applicationContext: Context
 ) : CustomTabsService {
 
-    override fun getPackageToUse(): String {
+    override fun getPackageToUse(preferChrome: Boolean): String {
         val pm = applicationContext.packageManager
         var packageToUse = "com.android.chrome"
 
@@ -41,6 +41,10 @@ class CustomTabsServiceImpl @Inject constructor(
             if (pm.resolveService(serviceIntent, 0) != null) { // Great, add it to the list
                 packagesSupportingCustomTabs.add(info.activityInfo.packageName)
             }
+        }
+
+        if (packagesSupportingCustomTabs.contains(packageToUse) && preferChrome) {
+            return packageToUse
         }
 
         if (packagesSupportingCustomTabs.isNotEmpty()) {
