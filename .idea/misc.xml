@@ -1,6 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="false" project-jdk-name="1.8" project-jdk-type="JavaSDK">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="../../../../layout/custom_preview.xml" value="0.19230769230769232" />
+        <entry key="../../Android/Sdk/platforms/android-29/data/res/layout/simple_dropdown_item_1line.xml" value="0.18020833333333333" />
+        <entry key="app/src/main/res/drawable/ic_baseline_check_circle_24.xml" value="0.11574074074074074" />
+        <entry key="app/src/main/res/drawable/ic_baseline_check_circle_white_24.xml" value="0.11574074074074074" />
+        <entry key="app/src/main/res/layout-land/camera_ui_container.xml" value="0.2821869488536155" />
+        <entry key="app/src/main/res/layout/actionbar_account.xml" value="0.21829710144927536" />
+        <entry key="app/src/main/res/layout/activity_add_item.xml" value="0.28894927536231885" />
+        <entry key="app/src/main/res/layout/activity_camera.xml" value="0.21829710144927536" />
+        <entry key="app/src/main/res/layout/activity_main.xml" value="0.19655797101449277" />
+        <entry key="app/src/main/res/layout/add_item_dialog_scrolling_content.xml" value="0.18020833333333333" />
+        <entry key="app/src/main/res/layout/camera_ui_container.xml" value="1.0" />
+        <entry key="app/src/main/res/layout/content_scrolling.xml" value="0.28894927536231885" />
+        <entry key="app/src/main/res/layout/fragment_camera.xml" value="0.25104166666666666" />
+        <entry key="app/src/main/res/layout/fragment_hub_information.xml" value="0.33" />
+        <entry key="app/src/main/res/layout/settings_activity.xml" value="0.21829710144927536" />
+      </map>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/build/classes" />
   </component>
   <component name="ProjectType">

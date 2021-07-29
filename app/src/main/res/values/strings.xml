@@ -39,4 +39,7 @@
     <string name="manual_collection_card_description">Collect items by name, university ID or room. Check recipient\'s ID.</string>
     <string name="title_activity_add_item">Save item to system</string>
     <string name="no_room">No room</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="loading">Loading...</string>
 </resources>

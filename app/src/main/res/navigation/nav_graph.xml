@@ -44,6 +44,25 @@
             app:popUpTo="@id/camera_fragment"
             app:popUpToInclusive="true"/>
 
+        <action
+            android:id="@+id/action_camera_to_hub_information"
+            app:destination="@id/hub_information_fragment"
+            app:popUpTo="@id/camera_fragment"
+            app:popUpToInclusive="true"/>
+
+    </fragment>
+
+    <fragment
+        android:id="@+id/hub_information_fragment"
+        android:name="uk.ac.warwick.postroom.fragments.HubInformationFragment"
+        android:label="HubInformationFragment" >
+
+        <action
+            android:id="@+id/action_hub_information_to_camera"
+            app:destination="@id/camera_fragment"
+            app:popUpTo="@id/hub_information_fragment"
+            app:popUpToInclusive="true" />
+
     </fragment>
 
 

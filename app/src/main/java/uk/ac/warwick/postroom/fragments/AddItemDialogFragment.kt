@@ -14,6 +14,8 @@ import android.widget.*
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.viewModelScope
+import com.github.kittinunf.fuel.core.FuelError
+import com.github.kittinunf.result.Result
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -54,9 +56,14 @@ class AddPhotoBottomDialogFragment(
     }
 
     private var onSuccessCallback: (item: ItemResult) -> Unit = {}
+    private var onFailureCallback: (result: Result<ItemResult, FuelError>) -> Unit = {}
 
     fun setOnSuccessCallback(callback: (item: ItemResult) -> Unit) {
         this.onSuccessCallback = callback
+    }
+
+    fun setOnFailureCallback(callback: (result: Result<ItemResult, FuelError>) -> Unit) {
+        this.onFailureCallback = callback
     }
 
     fun setBitmap(bitmap: Bitmap) {
@@ -167,12 +174,16 @@ class AddPhotoBottomDialogFragment(
             model.viewModelScope.launch(Dispatchers.IO) {
                 val addedItem = itemService.addItem(model)
                 val bitmap = bitmap
+                dismiss()
+                if (addedItem.component2() != null) {
+                    onFailureCallback(addedItem)
+                } else {
+                    onSuccessCallback(addedItem.get())
+                }
                 if (bitmap != null && addedItem.component2() == null) {
                     itemService.uploadImageForItem(UUID.fromString(model.qrId.value), bitmap)
                 }
-                dismiss()
-                // FIXME: error handle
-                onSuccessCallback(addedItem.get())
+
             }
         }
 

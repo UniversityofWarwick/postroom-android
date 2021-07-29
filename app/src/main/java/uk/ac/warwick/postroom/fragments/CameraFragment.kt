@@ -35,6 +35,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
@@ -42,6 +43,8 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.Navigation
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.camera_ui_container.*
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import nl.dionsegijn.konfetti.KonfettiView
 import nl.dionsegijn.konfetti.models.Shape
 import uk.ac.warwick.postroom.OcrImageAnalyzer
@@ -49,6 +52,7 @@ import uk.ac.warwick.postroom.R
 import uk.ac.warwick.postroom.activities.KEY_EVENT_ACTION
 import uk.ac.warwick.postroom.activities.KEY_EVENT_EXTRA
 import uk.ac.warwick.postroom.activities.SettingsActivity
+import uk.ac.warwick.postroom.domain.ItemAdditionError
 import uk.ac.warwick.postroom.domain.RecognisedBarcode
 import uk.ac.warwick.postroom.services.*
 import uk.ac.warwick.postroom.utils.simulateClick
@@ -225,6 +229,10 @@ class CameraFragment : Fragment() {
             viewLifecycleOwner,
             { barcodes ->
                 handleBarcodeSet(barcodes)
+
+                if (barcodes.isEmpty()) {
+                    trackingLbl.text = "No barcode"
+                }
             })
 
         model.uniIds.observe(viewLifecycleOwner, { uniIds ->
@@ -336,14 +344,18 @@ class CameraFragment : Fragment() {
             })
 
             bottomStatusBar.setOnClickListener {
-                val builder: AlertDialog.Builder = AlertDialog.Builder(this.requireContext())
-                builder.setTitle("Do you want to reset?")
-                builder.setMessage("Captured QR code, barcodes, courier guess, room number and university ID will be forgotten about.")
-                builder.setNegativeButton("Close"){ _, _ -> }
-                builder.setPositiveButton("Confirm") { _, _ -> doReset() }
-                builder.show()
+                promptForReset()
             }
         }
+    }
+
+    private fun promptForReset() {
+        val builder: AlertDialog.Builder = AlertDialog.Builder(this.requireContext())
+        builder.setTitle("Do you want to reset?")
+        builder.setMessage("Captured QR code, barcodes, courier guess, room number and university ID will be forgotten about.")
+        builder.setNegativeButton("Close") { _, _ -> }
+        builder.setPositiveButton("Confirm") { _, _ -> doReset() }
+        builder.show()
     }
 
     private fun doReset() {
@@ -555,32 +567,63 @@ class CameraFragment : Fragment() {
                 preview?.setSurfaceProvider(viewFinder.createSurfaceProvider(camera?.cameraInfo))
                 imageAnalyzer!!.setAnalyzer(executor1, OcrImageAnalyzer(requireContext(), model))
             }
+
             addPhotoBottomDialogFragment.setOnSuccessCallback { item ->
                 doReset()
+                if (item.recipient?.accommodationBlock?.hub == null) {
+                    val confetti = controls.findViewById<KonfettiView>(R.id.viewKonfetti)
+                    confetti.build()
+                        .addColors(
+                            Color.parseColor("#1e90ff"),
+                            Color.parseColor("#6b8e23"),
+                            Color.parseColor("#ffd700"),
+                            Color.parseColor("#ffc0cb"),
+                            Color.parseColor("#6a5acd"),
+                            Color.parseColor("#add8e6"),
+                            Color.parseColor("#ee82ee"),
+                            Color.parseColor("#98fb98"),
+                            Color.parseColor("#4682b4"),
+                            Color.parseColor("#f4a460"),
+                            Color.parseColor("#d2691e"),
+                            Color.parseColor("#dc143c")
+                        )
+                        .setDirection(0.0, 359.0)
+                        .setSpeed(5f, 5f)
+                        .setTimeToLive(5000L)
+                        .addShapes(Shape.Square, Shape.Circle)
+                        .addSizes(nl.dionsegijn.konfetti.models.Size(12))
+                        .setPosition(-50f, confetti.width + 50f, -50f, -50f)
+                        .streamFor(900, 500L)
+                    return@setOnSuccessCallback
+                }
+                val bundle = HubInformationFragment.newBundle(item.recipient?.accommodationBlock?.hub!!)
 
-                val confetti = controls.findViewById<KonfettiView>(R.id.viewKonfetti)
-                confetti.build()
-                    .addColors(
-                        Color.parseColor("#1e90ff"),
-                        Color.parseColor("#6b8e23"),
-                        Color.parseColor("#ffd700"),
-                        Color.parseColor("#ffc0cb"),
-                        Color.parseColor("#6a5acd"),
-                        Color.parseColor("#add8e6"),
-                        Color.parseColor("#ee82ee"),
-                        Color.parseColor("#98fb98"),
-                        Color.parseColor("#4682b4"),
-                        Color.parseColor("#f4a460"),
-                        Color.parseColor("#d2691e"),
-                        Color.parseColor("#dc143c")
+                activity?.runOnUiThread {
+                    Navigation.findNavController(requireActivity(), R.id.fragment_container).navigate(
+                        R.id.action_camera_to_hub_information, bundle
                     )
-                    .setDirection(0.0, 359.0)
-                    .setSpeed(5f, 5f)
-                    .setTimeToLive(5000L)
-                    .addShapes(Shape.Square, Shape.Circle)
-                    .addSizes(nl.dionsegijn.konfetti.models.Size(12))
-                    .setPosition(-50f, confetti.width + 50f, -50f, -50f)
-                    .streamFor(900, 500L)
+                }
+            }
+
+            addPhotoBottomDialogFragment.setOnFailureCallback {
+                var err = ""
+                if (it.component2()!!.response.data.isNotEmpty()) {
+                    err = it.component2()!!.response.body().toByteArray().decodeToString()
+                    try {
+                        val itemAdditionErr = Json { ignoreUnknownKeys=true }.decodeFromString<ItemAdditionError>(err)
+                        err = itemAdditionErr.error
+                    } catch (e: Exception) {}
+                } else {
+                    err = "Something went wrong"
+                }
+
+                activity?.runOnUiThread {
+                    val builder: AlertDialog.Builder = AlertDialog.Builder(this.requireContext())
+                    builder.setTitle("Failed to add item")
+                    builder.setMessage(err)
+                    builder.setNegativeButton("Close"){ _, _ -> promptForReset()}
+                    builder.show()
+                }
             }
 
         }
