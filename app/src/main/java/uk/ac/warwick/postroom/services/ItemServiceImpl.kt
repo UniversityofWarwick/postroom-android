@@ -40,7 +40,7 @@ class ItemServiceImpl @Inject constructor(
     }
 
     override suspend fun addItem(model: AddItemViewModel): Result<ItemResult, FuelError> {
-        val json = Json.Default
+        val json = Json { encodeDefaults = true }
         val courierId = model.courierId
         val body = json.encodeToString(
             AddItemRequestModel(
@@ -49,7 +49,8 @@ class ItemServiceImpl @Inject constructor(
                 trackingBarcode = model.trackingBarcode.value,
                 recipientId = model.recipientId.value,
                 sendNotifications = false,
-                rts = false
+                rts = false,
+                collectedBarcodes = model.allCollectedBarcodes.value?.toList() ?: emptyList()
             )
         )
 
