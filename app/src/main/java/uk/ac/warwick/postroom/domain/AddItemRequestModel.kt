@@ -16,5 +16,9 @@ data class AddItemRequestModel(
 
     var rts: Boolean = false,
 
-    val sendNotifications: Boolean = false
+    val sendNotifications: Boolean = false,
+
+    val fromApp: Boolean = true,
+
+    val collectedBarcodes: List<RecognisedBarcode>? = null
 )

@@ -107,6 +107,7 @@ class AddPhotoBottomDialogFragment(
         if (initialModel.bestBarcode.value != null) {
             this.model.trackingBarcode.postValue(initialModel.bestBarcode.value!!.barcode)
         }
+        this.model.allCollectedBarcodes.postValue(initialModel.allCollectedBarcodes.value)
         view.model = model
         view.lifecycleOwner = this
         return view.bottomSheetParent
