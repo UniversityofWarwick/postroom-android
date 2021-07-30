@@ -19,6 +19,7 @@ import com.github.kittinunf.result.Result
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import kotlinx.android.synthetic.main.activity_add_item.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import uk.ac.warwick.postroom.R
@@ -193,8 +194,15 @@ class AddPhotoBottomDialogFragment(
                 model.recipientId.postValue(recipientAdapter.resolveIdToRecipient(position).id)
             })
 
-        recipientTextView
-            .addTextChangedListener(object : TextWatcher {
+        view.findViewById<AutoCompleteTextView>(R.id.courierDropdown).onItemClickListener =
+            (AdapterView.OnItemClickListener { parent, view, position, id ->
+                val arrayAdapter = courierDropdown.adapter as? ArrayAdapter<Courier>
+                if (arrayAdapter?.getItem(position)?.id != null) {
+                    model.courierId.postValue(arrayAdapter.getItem(position)!!.id)
+                }
+            })
+
+        recipientTextView.addTextChangedListener(object : TextWatcher {
                 override fun afterTextChanged(p0: Editable?) {
                     if (recipientTextView.tag == null) {
                         model.recipientId.postValue(null)
