@@ -7,11 +7,12 @@ import java.time.LocalDate
 enum class RecipientSource {
     ManualEntry,
     KineticImport,
-    ConferenceImport
+    ConferenceImport,
+    KineticApplicantImport
 }
 
 enum class RecipientType {
-    Student, StaffFamily, RLT, CAL, VacationTenant, MRC
+    Student, StaffFamily, RLT, CAL, VacationTenant, MRC, AccommodationApplicant,
 }
 
 @Serializable

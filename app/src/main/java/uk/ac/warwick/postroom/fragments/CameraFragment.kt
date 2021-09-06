@@ -22,20 +22,20 @@ import android.content.*
 import android.content.res.Configuration
 import android.graphics.*
 import android.hardware.display.DisplayManager
+import android.media.AudioAttributes
+import android.media.SoundPool
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Size
 import android.view.*
 import android.widget.ImageButton
-import android.widget.Toast
 import androidx.camera.core.*
 import androidx.camera.core.Camera
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
-import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
@@ -73,6 +73,10 @@ import kotlin.math.min
  */
 @AndroidEntryPoint
 class CameraFragment : Fragment() {
+
+    private var dingSoundId: Int? = null
+    private var popSoundId: Int? = null
+    private var soundPool: SoundPool? = null
 
     private lateinit var container: ConstraintLayout
     private lateinit var viewFinder: PreviewView
@@ -154,6 +158,10 @@ class CameraFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
 
+        // Clean up sound pool resources
+        soundPool?.release()
+        dingSoundId = null
+
         // Shut down our background executor
         cameraExecutor.shutdown()
 
@@ -167,12 +175,22 @@ class CameraFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        model.initialFetchError.observe(viewLifecycleOwner, { newException ->
+        soundPool = SoundPool.Builder().setAudioAttributes(
+            AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+        ).setMaxStreams(3).build()
+
+        dingSoundId = soundPool?.load(context, R.raw.ding, 1)
+        popSoundId = soundPool?.load(context, R.raw.pop, 1)
+
+        model.initialFetchError.observe(viewLifecycleOwner) { newException ->
             val builder: AlertDialog.Builder = AlertDialog.Builder(this.requireContext())
             builder.setTitle("Failed to retrieve data from Postroom API")
             builder.setMessage("Your session might have expired, please link your identity again.")
             builder.setPositiveButton("Link identity now") { _: DialogInterface, _: Int ->
-                ContextCompat.startActivity(this.requireContext(),
+                ContextCompat.startActivity(
+                    this.requireContext(),
                     Intent(
                         this.requireContext(),
                         SettingsActivity::class.java
@@ -184,7 +202,7 @@ class CameraFragment : Fragment() {
                 this.requireActivity().onBackPressed()
             }
             builder.create().show()
-        })
+        }
         model.cacheData(recipientDataService, courierMatchService)
         return inflater.inflate(R.layout.fragment_camera, container, false)
     }
@@ -197,27 +215,27 @@ class CameraFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        model.uniId.observe(viewLifecycleOwner, { newUniId ->
+        model.uniId.observe(viewLifecycleOwner) { newUniId ->
             // Update the UI, in this case, a TextView.
             if (uniIdLbl != null && uniIdLbl?.text != newUniId) {
                 uniIdLbl.text = newUniId ?: resources.getText(R.string.no_id)
             }
-        })
+        }
 
-        model.uniId.observe(viewLifecycleOwner, {
+        model.uniId.observe(viewLifecycleOwner) {
             evaluateCurrentStatus()
-        })
+        }
 
-        model.room.observe(viewLifecycleOwner, {
+        model.room.observe(viewLifecycleOwner) {
             evaluateCurrentStatus()
-        })
+        }
 
-        model.room.observe(viewLifecycleOwner, { newRoom ->
+        model.room.observe(viewLifecycleOwner) { newRoom ->
             // Update the UI, in this case, a TextView.
             if (detectedRoomLbl != null && detectedRoomLbl?.text != newRoom) {
                 detectedRoomLbl.text = newRoom ?: resources.getText(R.string.no_room)
             }
-        })
+        }
 
         model.barcodes.observe(viewLifecycleOwner, Observer { num ->
             if (barcodeCount != null) {
@@ -226,38 +244,38 @@ class CameraFragment : Fragment() {
         })
 
         model.allCollectedBarcodes.observe(
-            viewLifecycleOwner,
-            { barcodes ->
-                handleBarcodeSet(barcodes)
+            viewLifecycleOwner
+        ) { barcodes ->
+            handleBarcodeSet(barcodes)
 
-                if (barcodes.isEmpty()) {
-                    trackingLbl.text = "No barcode"
-                }
-            })
+            if (barcodes.isEmpty()) {
+                trackingLbl.text = getString(R.string.ocr_status_no_barcode)
+            }
+        }
 
-        model.uniIds.observe(viewLifecycleOwner, { uniIds ->
+        model.uniIds.observe(viewLifecycleOwner) { uniIds ->
             if (dataCount != null) {
                 dataCount.text =
                     "${uniIds.size} known resident uni IDs, ${model.courierPatterns.value?.size ?: "?"} courier patterns"
             }
-        })
+        }
 
-        model.courierPatterns.observe(viewLifecycleOwner, { courierPatterns ->
+        model.courierPatterns.observe(viewLifecycleOwner) { courierPatterns ->
             if (dataCount != null) {
                 dataCount.text =
                     "${model.uniIds.value?.keys?.size ?: "?"} known resident uni IDs, ${courierPatterns.size} courier patterns"
             }
-        })
+        }
 
-        model.qrId.observe(viewLifecycleOwner, { newQrId ->
+        model.qrId.observe(viewLifecycleOwner) { newQrId ->
             // Update the UI, in this case, a TextView.
             if (qrId != null && qrId?.text != newQrId) {
-                qrId.text = newQrId ?: "No QR"
+                qrId.text = newQrId ?: getString(R.string.ocr_status_summary_no_qr)
                 view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             }
-        })
+        }
 
-        model.uniIdBoundingBox.observe(viewLifecycleOwner, { newRect ->
+        model.uniIdBoundingBox.observe(viewLifecycleOwner) { newRect ->
             if (newRect != null && canvas) {
                 val canvas = surfaceView.holder.lockCanvas()
                 val rect: RectF
@@ -289,7 +307,7 @@ class CameraFragment : Fragment() {
                 canvas.drawColor(0, PorterDuff.Mode.CLEAR)
                 surfaceView.holder.unlockCanvasAndPost(canvas)
             }
-        })
+        }
 
 
         container = view as ConstraintLayout
@@ -309,7 +327,6 @@ class CameraFragment : Fragment() {
 
         // Wait for the views to be properly laid out
         viewFinder.post {
-
             // Keep track of the display in which this view is attached
             displayId = viewFinder.display.displayId
             viewFinder.preferredImplementationMode = PreviewView.ImplementationMode.TEXTURE_VIEW
@@ -336,11 +353,9 @@ class CameraFragment : Fragment() {
                 }
 
                 override fun surfaceCreated(holder: SurfaceHolder?) {
-                    Log.i(TAG, "Surface was created")
                     surfaceView.setZOrderOnTop(true)
                     canvas = true
                 }
-
             })
 
             bottomStatusBar.setOnClickListener {
@@ -351,8 +366,8 @@ class CameraFragment : Fragment() {
 
     private fun promptForReset() {
         val builder: AlertDialog.Builder = AlertDialog.Builder(this.requireContext())
-        builder.setTitle("Do you want to reset?")
-        builder.setMessage("Captured QR code, barcodes, courier guess, room number and university ID will be forgotten about.")
+        builder.setTitle(getString(R.string.reset_confirmation_title))
+        builder.setMessage(getString(R.string.reset_confirmation_body))
         builder.setNegativeButton("Close") { _, _ -> }
         builder.setPositiveButton("Confirm") { _, _ -> doReset() }
         builder.show()
@@ -395,20 +410,44 @@ class CameraFragment : Fragment() {
 
     private fun evaluateCurrentStatus() {
         if (statusIndicator != null) {
+            var shouldPlayDing = false
             if (model.recipientGuesses.value?.size == 2 && model.recipientGuesses.value!!.distinctBy { it.id }.size == 1) {
                 checkKnownRecipient.setImageResource(R.drawable.ic_baseline_check_circle_24)
+                shouldPlayDing = true
             } else if (model.recipientGuesses.value?.size == 2 && model.recipientGuesses.value!!.distinctBy { it.id }.size == 2) {
                 checkKnownRecipient.setImageResource(R.drawable.ic_baseline_error_24)
             } else if (model.recipientGuesses.value?.size == 1) {
                 checkKnownRecipient.setImageResource(R.drawable.ic_baseline_check_circle_white_24)
+                shouldPlayDing = true
             } else {
                 checkKnownRecipient.setImageResource(R.drawable.ic_baseline_not_interested_24)
             }
 
+            if (shouldPlayDing && checkKnownRecipient.tag != "played" && dingSoundId != null) {
+                soundPool?.also {
+                    it.play(dingSoundId!!, 1f, 1f, 1, 0, 1f)
+                }
+                checkKnownRecipient.tag = "played"
+            } else if (!shouldPlayDing && model.recipientGuesses.value?.isEmpty() != false) {
+                checkKnownRecipient.tag = ""
+            }
+
+            var shouldPlayPop = false
+
             if (model.courierGuess.value != null) {
                 checkKnownCourier.setImageResource(R.drawable.ic_baseline_check_circle_24)
+                shouldPlayPop = true
             } else {
                 checkKnownCourier.setImageResource(R.drawable.ic_baseline_not_interested_24)
+            }
+
+            if (shouldPlayPop && popSoundId != null && checkKnownCourier.tag != "played") {
+                soundPool?.also {
+                    it.play(popSoundId!!, 1f, 1f, 1, 0, 1f)
+                }
+                checkKnownCourier.tag = "played"
+            } else if (!shouldPlayPop) {
+                checkKnownCourier.tag = ""
             }
 
             if (barcodeCount != null) {
@@ -534,6 +573,8 @@ class CameraFragment : Fragment() {
     }
 
 
+    private val jsonIgnoreKeysInstance = Json { ignoreUnknownKeys = true }
+
     /** Method used to re-draw the camera UI controls, called every time configuration changes. */
     private fun updateCameraUi() {
 
@@ -610,7 +651,7 @@ class CameraFragment : Fragment() {
                 if (it.component2()!!.response.data.isNotEmpty()) {
                     err = it.component2()!!.response.body().toByteArray().decodeToString()
                     try {
-                        val itemAdditionErr = Json { ignoreUnknownKeys=true }.decodeFromString<ItemAdditionError>(err)
+                        val itemAdditionErr = jsonIgnoreKeysInstance.decodeFromString<ItemAdditionError>(err)
                         err = itemAdditionErr.error
                     } catch (e: Exception) {}
                 } else {
@@ -619,7 +660,7 @@ class CameraFragment : Fragment() {
 
                 activity?.runOnUiThread {
                     val builder: AlertDialog.Builder = AlertDialog.Builder(this.requireContext())
-                    builder.setTitle("Failed to add item")
+                    builder.setTitle(getString(R.string.item_addition_error_title))
                     builder.setMessage(err)
                     builder.setNegativeButton("Close"){ _, _ -> promptForReset()}
                     builder.show()
@@ -634,8 +675,8 @@ class CameraFragment : Fragment() {
         val ready = model.couriers.value?.any() == true && model.qrId.value?.isNotEmpty() == true
         if (!ready) {
             val builder: AlertDialog.Builder = AlertDialog.Builder(this.requireContext())
-            builder.setTitle("Not ready to add item yet")
-            builder.setMessage("You need to have scanned a QR barcode and the phone needs to have fetched a list of couriers from the remote server first.")
+            builder.setTitle(getString(R.string.pre_requisites_failed_title))
+            builder.setMessage(getString(R.string.pre_requisites_failed_body))
             builder.setNegativeButton("Close"){ _, _ -> }
             builder.show()
         }
