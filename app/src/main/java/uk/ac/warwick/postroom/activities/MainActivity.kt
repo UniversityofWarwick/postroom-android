@@ -43,6 +43,7 @@ const val POSTROOM_BASE_URL_DEFAULT = "https://postroom.warwick.ac.uk/"
 const val PROCESS_INCOMING_ROUTE = "process-incoming/"
 const val COLLECTION_ROUTE = "process-collection/"
 const val AUDITS_ROUTE = "admin/audits/"
+const val MOVE_HELD_CENTRALLY_ROUTE = "move-from-held-centrally/"
 const val RTS_SPR_ROUTE = "rts/"
 const val MOVE_ITEMS_ROUTE = "move/"
 const val RTS_COURIER_ROUTE = "rts/couriers/"
@@ -250,6 +251,10 @@ class MainActivity : AppCompatActivity() {
             }
             R.id.viewRecentActivityMenuItem -> {
                 goToUrl(providesBaseUrl.getBaseUrl() + AUDITS_ROUTE)
+                true
+            }
+            R.id.heldCentrallyItemsMenuItem -> {
+                goToUrl(providesBaseUrl.getBaseUrl() + MOVE_HELD_CENTRALLY_ROUTE)
                 true
             }
             else -> super.onOptionsItemSelected(item)

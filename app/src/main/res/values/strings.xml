@@ -39,8 +39,6 @@
     <string name="manual_collection_card_description">Collect items by name, university ID or room. Check recipient\'s ID.</string>
     <string name="title_activity_add_item">Save item to system</string>
     <string name="no_room">No room</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="loading">Loading...</string>
     <string name="pre_requisites_failed_title">Not ready to add item yet</string>
     <string name="pre_requisites_failed_body">You need to have scanned a QR barcode and the phone needs to have fetched a list of couriers from the remote server first.</string>
@@ -49,4 +47,5 @@
     <string name="reset_confirmation_body">Captured QR code, barcodes, courier guess, room number and university ID will be forgotten about.</string>
     <string name="ocr_status_summary_no_qr">No QR</string>
     <string name="ocr_status_no_barcode">No barcode</string>
+    <string name="held_centrally">“Held centrally” Items</string>
 </resources>
