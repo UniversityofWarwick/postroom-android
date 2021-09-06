@@ -228,7 +228,12 @@ class MainActivity : AppCompatActivity() {
                     builder.setTitle("This feature requires you to link your Warwick account to the app")
                     builder.setMessage("The OCR component needs to be able to fetch a valid list of university IDs and rooms, using your access to the Postroom system.")
                     builder.setPositiveButton("Link identity now") { _: DialogInterface, _: Int ->
-                        startActivity(Intent(this, SettingsActivity::class.java).putExtra("link", true))
+                        startActivity(
+                            Intent(this, SettingsActivity::class.java).putExtra(
+                                "link",
+                                true
+                            )
+                        )
                     }
                     builder.setNegativeButton("Cancel") { _: DialogInterface, _: Int -> }
                     builder.create().show()
