@@ -26,6 +26,6 @@
         android:title="@string/held_centrally" />
     <item
         android:id="@+id/legacyAddNewItemsItem"
-        android:title="Legacy: add items"
+        android:title="@string/legacy_add_items"
         app:showAsAction="never" />
 </menu>
