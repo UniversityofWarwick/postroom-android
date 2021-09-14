@@ -7,11 +7,6 @@
         android:title="@string/settings"
         app:showAsAction="ifRoom" />
     <item
-        android:id="@+id/cameraBtn"
-        android:icon="@drawable/ic_baseline_camera_alt_24"
-        android:title="@string/camera"
-        app:showAsAction="ifRoom" />
-    <item
         android:id="@+id/shelfAuditMenuItem"
         android:title="Shelf audit"
         app:showAsAction="never" />
@@ -29,4 +24,8 @@
     <item
         android:id="@+id/heldCentrallyItemsMenuItem"
         android:title="@string/held_centrally" />
+    <item
+        android:id="@+id/legacyAddNewItemsItem"
+        android:title="@string/legacy_add_items"
+        app:showAsAction="never" />
 </menu>
