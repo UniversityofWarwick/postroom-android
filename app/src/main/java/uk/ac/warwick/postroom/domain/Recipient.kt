@@ -49,6 +49,15 @@ data class Recipient(
     override fun toString(): String {
         return """$firstName $lastName / $room / $universityId"""
     }
+
+    fun preferredNameOrFullName(): String {
+        if (this.preferredName != null) {
+            return this.preferredName!!
+        }
+        return this.firstName + " " + this.lastName
+    }
+
+    fun hasDistinctNames(): Boolean = (this.firstName + " " + this.lastName) != this.preferredName
 }
 
 @Serializable

@@ -118,7 +118,7 @@ class AddPhotoBottomDialogFragment(
         val progressBarView = view.findViewById<ProgressBar>(R.id.progressBar)
         val recipientAdapter = RecipientAdapter(
             this.requireActivity(),
-            android.R.layout.simple_dropdown_item_1line,
+            R.layout.recipient_adapter_list_item,
             baseUrl,
             sscPersistenceService,
             progressBarView
