@@ -49,4 +49,7 @@
     <string name="ocr_status_no_barcode">No barcode</string>
     <string name="held_centrally">“Held centrally” Items</string>
     <string name="legacy_add_items">Legacy: add items</string>
+    <string name="building_content_descr">Building</string>
+    <string name="person_content_descr">Person</string>
+    <string name="id_badge_content_descr">ID badge</string>
 </resources>
