@@ -55,6 +55,7 @@
 
                 <AutoCompleteTextView
                     android:id="@+id/recipientDropdown"
+                    style="@style/Postroom.ListBoxesWithDividers"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:completionThreshold="1"

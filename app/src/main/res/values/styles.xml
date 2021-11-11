@@ -5,6 +5,7 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:dropDownListViewStyle">@style/Postroom.ListBoxesWithDividers</item>
         <item name="android:actionOverflowButtonStyle">@style/postroomOverflow</item>
     </style>
 
@@ -51,6 +52,11 @@
         <item name="boxStrokeColor">@color/colorPrimary</item>
         <item name="hintTextColor">@color/colorPrimary</item>
         <item name="boxStrokeWidth">2dp</item>
+    </style>
+
+    <style name="Postroom.ListBoxesWithDividers" parent="@android:style/Widget.ListView">
+        <item name="android:divider">@color/colorDivider</item>
+        <item name="android:dividerHeight">1px</item>
     </style>
 
 
