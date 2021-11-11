@@ -59,35 +59,6 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_marginBottom="2dp"
-            android:layout_height="match_parent">
-
-            <ImageView
-                android:id="@+id/ic_building"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginTop="0dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/ic_building"
-                android:contentDescription="@string/building_content_descr" />
-
-            <TextView
-                android:id="@+id/building_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:layout_marginTop="0dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/ic_building"
-                app:layout_constraintTop_toTopOf="parent"
-                tools:text="BB54.5 (Bluebell)" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/constraint_layout_legal_name"
             android:layout_width="match_parent"
             android:layout_marginBottom="2dp"
@@ -115,6 +86,35 @@
                 app:layout_constraintStart_toEndOf="@+id/ic_passport"
                 app:layout_constraintTop_toTopOf="parent"
                 tools:text="Jonathan Smith (Legal Name)" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_marginBottom="2dp"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/ic_building"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="0dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:srcCompat="@drawable/ic_building"
+                android:contentDescription="@string/building_content_descr" />
+
+            <TextView
+                android:id="@+id/building_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="0dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/ic_building"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:text="BB54.5 (Bluebell)" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </LinearLayout>
 
