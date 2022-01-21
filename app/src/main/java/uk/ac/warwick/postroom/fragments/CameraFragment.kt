@@ -340,7 +340,7 @@ class CameraFragment : Fragment() {
             surfaceView.holder.setFormat(PixelFormat.TRANSPARENT)
             surfaceView.holder.addCallback(object : SurfaceHolder.Callback {
                 override fun surfaceChanged(
-                    holder: SurfaceHolder?,
+                    holder: SurfaceHolder,
                     format: Int,
                     width: Int,
                     height: Int
@@ -348,11 +348,11 @@ class CameraFragment : Fragment() {
 
                 }
 
-                override fun surfaceDestroyed(holder: SurfaceHolder?) {
+                override fun surfaceDestroyed(holder: SurfaceHolder) {
                     canvas = false
                 }
 
-                override fun surfaceCreated(holder: SurfaceHolder?) {
+                override fun surfaceCreated(holder: SurfaceHolder) {
                     surfaceView.setZOrderOnTop(true)
                     canvas = true
                 }
@@ -596,7 +596,7 @@ class CameraFragment : Fragment() {
                 preview?.setSurfaceProvider(null)
                 imageAnalyzer?.clearAnalyzer()
                 val bitmap = vfChild.getBitmap(viewFinder.width, viewFinder.height)
-                addPhotoBottomDialogFragment.setBitmap(bitmap)
+                addPhotoBottomDialogFragment.setBitmap(bitmap!!)
                 addPhotoBottomDialogFragment.show(
                     parentFragmentManager,
                     "add_photo_dialog_fragment"

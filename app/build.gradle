@@ -7,24 +7,22 @@ apply plugin: 'kotlin-kapt'
 apply plugin: 'dagger.hilt.android.plugin'
 apply plugin: 'kotlinx-serialization'
 
-def keystorePropertiesFile = rootProject.file("keystore.properties");
+if (!project.hasProperty("Postroom.keystore")) {
+    throw new Exception("~/.gradle/gradle.properties needs to contain the necessary Postroom.* properties.")
+}
 
 android {
     ndkVersion "21.3.6528147"
-    if (keystorePropertiesFile.exists()) {
-        def keystoreProperties = new Properties()
-        keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-        signingConfigs {
-            debug {
-                storeFile file(keystoreProperties['storeLocation'])
-                keyAlias 'upload'
-                storePassword keystoreProperties['storePassword']
-                keyPassword keystoreProperties['keyPassword']
-            }
+    signingConfigs {
+        debug {
+            keyAlias project.property("Postroom.keyAlias")
+            keyPassword project.property("Postroom.keyPass")
+            storeFile file(project.property("Postroom.keystore"))
+            storePassword project.property("Postroom.keyPass")
         }
     }
 
-    compileSdkVersion 29
+    compileSdkVersion 30
 
     defaultConfig {
         applicationId "uk.ac.warwick.postroom"
