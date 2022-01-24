@@ -191,7 +191,7 @@ class AddPhotoBottomDialogFragment(
 
         recipientTextView.onItemClickListener =
             (AdapterView.OnItemClickListener { parent, view, position, id ->
-                Log.i(TAG, recipientAdapter.resolveIdToRecipient(position).id)
+                Log.i(TAG, recipientAdapter.resolveIdToRecipient(position).id!!)
                 model.recipientId.postValue(recipientAdapter.resolveIdToRecipient(position).id)
             })
 
