@@ -12,7 +12,7 @@ enum class RecipientSource {
 }
 
 enum class RecipientType {
-    Student, StaffFamily, RLT, CAL, VacationTenant, MRC, AccommodationApplicant,
+    Student, StaffFamily, RLT, CAL, SummerSchool, VacationTenant, MRC, AccommodationApplicant,
 }
 
 @Serializable
