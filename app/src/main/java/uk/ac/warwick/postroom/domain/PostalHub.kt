@@ -8,7 +8,7 @@ data class PostalHub(
     var name: String? = null,
     var location: String? = null,
     var displayOrder: Int? = null,
-    var mapId: String? = null,
+    var mapId: Int? = null,
     var fgColour: String? = null,
     var bgColour: String? = null
 )
